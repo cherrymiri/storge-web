@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%223%22 fill=%22%23e8a35c%22/%3E%3C/svg%3E" />
+  <title>STORGE — 가족의 사랑 · When Love Responds</title>
+  <link rel="preload" href="./models/STORGE_MusicBox.glb" as="fetch" crossorigin />
+</head>
+<body>
+  <div id="app">
+    <canvas id="stage" aria-label="STORGE 오르골 3D 장면"></canvas>
+
+    <header class="hud-top" id="hud-top">
+      <div class="title-row">
+        <span class="rule" aria-hidden="true"></span>
+        <h1 class="title">STORGE</h1>
+        <span class="rule" aria-hidden="true"></span>
+      </div>
+      <p class="subtitle">가족의 사랑</p>
+      <p class="prompt" aria-live="polite">
+        <span class="prompt-line is-visible" data-prompt="intro">태엽을 감아 가족의 사랑을 들려주세요.</span>
+        <span class="prompt-line" data-prompt="winding">사랑이 가득 차오르고 있어요.</span>
+        <span class="prompt-line" data-prompt="broken">사랑과 미움이 뒤엉켜, 선율이 깨졌어요.</span>
+        <span class="prompt-line" data-prompt="repair">깨진 선율을 다시 이어주세요.</span>
+        <span class="prompt-line prompt-question" data-prompt="question">멜로디가 바뀐 나,<br class="br-narrow"> 가족들은 날 기억할까요?</span>
+      </p>
+    </header>
+
+    <!-- 06: the family's answer (placed in open space by the scene) -->
+    <div class="ending" id="ending" aria-live="polite">
+      <p class="answer-ko" lang="ko">그럼, <br class="ans-br">다시 외우면 되지.</p>
+      <p class="answer-en" lang="en">Then I'll learn it again.</p>
+    </div>
+
+    <!-- the small staff: drawn from the same melody data the music box plays -->
+    <div class="score" id="score" data-mode="play"></div>
+
+    <footer class="hud-bottom" id="hud-bottom">
+      <p class="hint" id="hint" data-mode="wheel">
+        <svg class="hint-icon hint-mouse" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="5.5"/><line x1="12" y1="6.5" x2="12" y2="9.5"/></svg>
+        <svg class="hint-icon hint-hand" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.6-2.2L4.5 15.6a1.5 1.5 0 0 1 2.3-1.9L9 16"/></svg>
+        <span class="hint-text hint-wheel">마우스 휠을 굴려 태엽을 감아보세요.</span>
+        <span class="hint-text hint-touch">화면을 위로 밀어 태엽을 감아보세요.</span>
+        <span class="hint-text hint-again">태엽을 다시 감아보세요.</span>
+      </p>
+    </footer>
+    <button class="replay" id="replay" type="button" tabindex="-1">다시 감기</button>
+
+    <div class="sound" id="sound">
+      <span class="sound-tip" id="sound-tip" aria-live="polite">화면을 한 번 클릭하면 소리가 함께 들려요</span>
+      <button class="sound-btn" id="sound-toggle" type="button" aria-label="소리 끄기" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/>
+          <path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>
+          <path class="mute" d="M16 9.5l5 5m0-5l-5 5"/>
+        </svg>
+      </button>
+      <input class="sound-vol" id="sound-volume" type="range" min="0" max="1" step="0.01" value="0.7" aria-label="음량" />
+    </div>
+
+    <div class="loader" id="loader" aria-hidden="true"><span></span></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

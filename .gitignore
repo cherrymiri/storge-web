@@ -1,0 +1,9 @@
+node_modules
+dist
+tests/shots
+tests/*.log
+.DS_Store
+tests/*.flag
+*.local
+.env*
+.vercel

@@ -1,0 +1,216 @@
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('../assets/fonts/PretendardVariable.woff2') format('woff2-variations');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #000000;
+  --ivory: #f3e7d3;
+  --ivory-dim: rgba(243, 231, 211, 0.62);
+  --ivory-faint: rgba(243, 231, 211, 0.28);
+  --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; background: var(--bg); color: var(--ivory);
+  font-family: var(--font); overflow: hidden; overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+}
+#app { position: fixed; inset: 0; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#stage {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  touch-action: none; outline: none;
+}
+#stage.can-grab { cursor: grab; }
+#stage.is-grabbing { cursor: grabbing; }
+
+/* ---------- top: title + story prompt ---------- */
+.hud-top {
+  position: absolute; left: 0; right: 0; top: 0;
+  padding: calc(clamp(28px, 6.2vh, 64px) + var(--safe-top)) 24px 0;
+  text-align: center; pointer-events: none; user-select: none;
+}
+.title-row { display: flex; align-items: center; justify-content: center; gap: clamp(18px, 3vw, 40px); }
+.rule { width: clamp(40px, 9vw, 120px); height: 1px; background: linear-gradient(90deg, transparent, var(--ivory-faint)); }
+.rule:last-child { background: linear-gradient(90deg, var(--ivory-faint), transparent); }
+.title {
+  margin: 0; font-weight: 300; font-size: clamp(26px, 3.2vw, 46px);
+  letter-spacing: 0.32em; padding-left: 0.32em; line-height: 1.1;
+}
+.subtitle {
+  margin: clamp(8px, 1.4vh, 14px) 0 0; font-weight: 300; font-size: clamp(13px, 1.15vw, 16px);
+  letter-spacing: 0.3em; padding-left: 0.3em; color: var(--ivory-dim);
+}
+.prompt {
+  position: relative; margin: clamp(22px, 5vh, 56px) auto 0; height: 1.5em;
+  font-weight: 400; font-size: clamp(16px, 1.75vw, 26px); letter-spacing: 0.04em;
+}
+.prompt-line {
+  position: absolute; left: 0; right: 0; top: 0; white-space: nowrap;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 1.4s ease, transform 1.4s ease;
+}
+.prompt-line.is-visible { opacity: 1; transform: none; }
+/* 05 question: fades in/out slowly; on narrow phones it may take two lines */
+.prompt-question { transition-duration: 0.4s; line-height: 1.5; }            /* leaving: ≈0.4 s */
+.prompt-question.is-visible { transition-duration: 0.8s; }                   /* arriving: a quiet fade-in */
+.br-narrow { display: none; }
+@media (max-width: 480px) { .prompt-question { white-space: normal; } .br-narrow { display: inline; } }
+
+/* 06 answer: the family's voice. Set apart by how it arrives (gathered from the melody's light), its warm
+   rose-champagne colour, its own open place in the middle — and only a little larger than the captions
+   (×1.32), Medium weight, no glow on the letters. The English line small, light, beige. */
+.ending {
+  --answer-base: max(21px, calc(1.32 * clamp(16px, 1.75vw, 26px)));   /* captions 16–26 px → 21–34 px */
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
+  text-align: center; pointer-events: none; user-select: none; width: max-content; max-width: calc(100vw - 32px);
+}
+.answer-ko, .answer-en { margin: 0; opacity: 0; transform: translateY(6px); white-space: nowrap; }
+.answer-ko {
+  font-size: var(--answer-size, var(--answer-base)); font-weight: 500; letter-spacing: 0.02em; line-height: 1.3;
+  color: #f4bda9;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.answer-en {
+  margin-top: 0.75em; font-size: calc(var(--answer-size, var(--answer-base)) * 0.5); font-weight: 300;
+  letter-spacing: 0.05em; color: #cbb89d;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+/* while the motes gather, the real text comes up underneath them: blurred → sharp */
+.ending.forming .answer-ko {
+  opacity: var(--ko-reveal, 0); transform: none; transition: none;
+  filter: blur(calc((1 - var(--ko-reveal, 0)) * 5px));
+}
+.answer-fx { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+.ans-br { display: none; }
+.ending.is-wrapped .ans-br { display: inline; }   /* narrow screens: "그럼," / "다시 외우면 되지." */
+.ending.show-ko .answer-ko, .ending.show-en .answer-en { opacity: 1; transform: none; }
+
+/* "다시 감기" */
+.replay {
+  position: absolute; left: 50%; bottom: calc(clamp(22px, 5vh, 52px) + var(--safe-bottom)); transform: translate(-50%, 6px);
+  font: inherit; font-size: 14px; font-weight: 400; letter-spacing: 0.14em; padding: 11px 26px 11px 28px;
+  color: var(--ivory); background: rgba(0, 0, 0, 0.35); border: 1px solid var(--ivory-faint); border-radius: 999px;
+  opacity: 0; pointer-events: none; cursor: pointer; transition: opacity 1.6s ease, transform 1.6s ease, border-color 0.3s ease;
+}
+.replay.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.replay:hover { border-color: var(--ivory-dim); }
+/* on "다시 감기" the ending disappears at once (no long fade over the first screen) */
+.instant, .instant .answer-ko, .instant .answer-en { transition: none !important; }
+.replay:focus-visible { outline: 1px solid var(--ivory); outline-offset: 3px; }
+
+/* ---------- bottom: hint ---------- */
+.hud-bottom {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 0 24px calc(clamp(22px, 5vh, 52px) + var(--safe-bottom));
+  pointer-events: none; user-select: none; text-align: center;
+  transition: opacity 1.6s ease;
+}
+.hud-bottom.is-quiet { opacity: 0.38; }
+.hud-bottom.is-hidden { opacity: 0; }
+.hint {
+  margin: 0; display: inline-flex; align-items: center; gap: 14px;
+  font-size: clamp(12px, 1vw, 15px); font-weight: 300; color: var(--ivory-dim); letter-spacing: 0.04em;
+}
+.hint-icon { width: 22px; height: 22px; fill: none; stroke: var(--ivory-dim); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.hint[data-mode="wheel"] .hint-hand, .hint[data-mode="wheel"] .hint-touch,
+.hint[data-mode="touch"] .hint-mouse, .hint[data-mode="touch"] .hint-wheel { display: none; }
+/* 05: "태엽을 다시 감아보세요." takes the place of the first winding hint (same icon) */
+.hint-again { display: none; }
+.hint[data-phase="again"] .hint-wheel, .hint[data-phase="again"] .hint-touch { display: none; }
+.hint[data-phase="again"] .hint-again { display: inline; }
+
+/* ---------- the small staff ---------- */
+.score {
+  position: absolute; pointer-events: none; user-select: none;
+  transition: opacity 1.6s ease;
+}
+.score-svg { display: block; overflow: visible; }
+.score[data-mode="frozen"] { opacity: 0.62; }
+.score[data-mode="quiet"] { opacity: 0.4; }
+.score[data-mode="compare"], .score[data-mode="done"] { opacity: 0.94; }
+.sc-page { opacity: 0; transition: opacity 0.9s ease; }
+.sc-page.on { opacity: 1; }
+.nt { transition: color 0.45s ease; }
+.nt .halo { opacity: 0; transition: opacity 0.6s ease; }
+.seg { opacity: 0.16; transition: opacity 0.6s ease, color 0.45s ease; }
+/* 01: the original melody — dim until played, warm gold once played, brighter while sounding */
+.k-main { color: rgba(226, 164, 96, 0.36); }
+.k-main[data-state="played"] { color: rgba(236, 172, 98, 0.84); }
+.k-main[data-state="current"] { color: #ffd9a2; }
+.seg.k-main[data-state="played"], .seg.k-main[data-state="current"] { opacity: 0.42; }
+/* 05: the 01 phrase as a faint grey-beige trace */
+.k-ghost, .k-ghost[data-state] { color: rgba(196, 184, 164, 0.42); }
+.seg.k-ghost { opacity: 0.3; }
+.k-ghost .halo { display: none; }
+/* 05: the changed phrase — low until played, then warm orange-gold */
+.k-new { color: rgba(236, 156, 76, 0.3); }
+.k-new[data-state="played"] { color: #f0ae62; }
+.k-new[data-state="past"] { color: rgba(240, 174, 98, 0.6); }
+.k-new[data-state="current"], .k-new[data-state="finale"] { color: #ffe1b2; }
+.seg.k-new[data-state="played"], .seg.k-new[data-state="current"], .seg.k-new[data-state="finale"] { opacity: 0.5; }
+.seg.k-new[data-state="past"] { opacity: 0.32; }
+.nt[data-state="current"] .halo { opacity: 0.85; }
+.nt[data-state="finale"] .halo { opacity: 1; transform-box: fill-box; transform-origin: center; animation: sc-finale 2.2s ease-out both; }
+@keyframes sc-finale { 0% { transform: scale(0.8); opacity: 0.6; } 25% { transform: scale(1.45); opacity: 1; } 100% { transform: scale(1.1); opacity: 0.9; } }
+/* 03: the music stops — the last highlight fades slowly */
+.score[data-mode="frozen"] .halo, .score[data-mode="quiet"] .halo { transition-duration: 1.8s; }
+.score.instant, .score.instant * { transition: none !important; }
+
+/* ---------- sound ---------- */
+.sound {
+  position: absolute; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(18px + var(--safe-bottom));
+  display: flex; align-items: center; gap: 8px; opacity: 0.55; transition: opacity 0.4s ease;
+}
+.sound:hover, .sound:focus-within { opacity: 1; }
+.sound-btn {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--ivory-faint);
+  background: transparent; color: var(--ivory); display: grid; place-items: center; cursor: pointer; padding: 0;
+}
+.sound-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.sound-btn .mute { display: none; }
+.sound-btn[aria-pressed="true"] .wave { display: none; }
+.sound-btn[aria-pressed="true"] .mute { display: inline; }
+.sound-btn:focus-visible { outline: 1px solid var(--ivory); outline-offset: 3px; }
+.sound-vol { width: 84px; accent-color: #e8b98a; }
+/* only shown when a wheel-only visitor has winding going but the browser still blocks sound */
+.sound-tip {
+  position: absolute; right: calc(100% + 12px); top: 50%; margin-top: -0.75em;   /* takes no space: never blocks the 3D area */
+  font-size: 12px; font-weight: 300; color: var(--ivory-dim); letter-spacing: 0.03em; white-space: nowrap;
+  opacity: 0; transform: translateX(6px); transition: opacity 0.8s ease, transform 0.8s ease; pointer-events: none;
+}
+.sound.has-tip { opacity: 1; }
+.sound.has-tip .sound-tip { opacity: 1; transform: none; }
+
+/* ---------- loader ---------- */
+.loader { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; transition: opacity 0.9s ease; }
+.loader span { width: 56px; height: 1px; background: var(--ivory-faint); overflow: hidden; position: relative; }
+.loader span::after { content: ''; position: absolute; inset: 0; width: 40%; background: var(--ivory-dim); animation: load 1.2s ease-in-out infinite; }
+@keyframes load { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+.loader.is-done { opacity: 0; }
+
+/* ---------- narrow / portrait ---------- */
+@media (max-width: 640px) {
+  .hint-text { font-size: 12px; }
+  .hint { gap: 10px; }
+  .sound-tip { display: none; }
+  .sound-vol { display: none; }
+  .prompt { font-size: 16px; }
+}
+@media (max-height: 460px) and (orientation: landscape) {
+  .hud-top { padding-top: calc(14px + var(--safe-top)); }
+  .title { font-size: 22px; }
+  .subtitle { margin-top: 4px; font-size: 11px; }
+  .prompt { margin-top: 10px; font-size: 14px; }
+  .hud-bottom { padding-bottom: calc(10px + var(--safe-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompt-line, .hud-bottom, .loader { transition: none; }
+  .nt[data-state="finale"] .halo { animation: none; }
+}

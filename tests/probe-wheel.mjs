@@ -1,0 +1,13 @@
+import puppeteer from 'puppeteer-core';
+const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const p = await b.newPage(); await p.setViewport({ width: 1600, height: 900 });
+await p.goto('http://localhost:5173/?debug', { waitUntil: 'networkidle0' }); await p.waitForFunction('window.__storgeReady');
+await p.evaluate(() => { window.__d = []; window.addEventListener('wheel', (e) => window.__d.push([e.deltaY, e.deltaMode, e.target.id]), { passive: true });
+  window.__frames = []; const loop = () => { window.__frames.push(+window.__storge.state.crankAngle.toFixed(4)); requestAnimationFrame(loop); }; requestAnimationFrame(loop); });
+await new Promise((r) => setTimeout(r, 500));
+await p.mouse.move(1100, 450);
+await p.evaluate(() => { window.__frames = []; });
+await p.mouse.wheel({ deltaY: 100 });
+await new Promise((r) => setTimeout(r, 2500));
+console.log(JSON.stringify(await p.evaluate(() => ({ d: window.__d, frames: window.__frames.slice(0, 30), n: window.__frames.length, s: window.__storge.state }))));
+await b.close();
