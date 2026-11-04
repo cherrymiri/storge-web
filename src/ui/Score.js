@@ -97,6 +97,8 @@ export class Score {
   /** size to the screen and sit just above the hint line; returns the score's box */
   layout(hintTop) {
     const W = window.innerWidth, H = window.innerHeight;
+    // a window that is momentarily 0 wide (hidden tab / pane opening): keep the last layout
+    if (W < 120 || H < 120) return this.box || { left: 0, right: 0, top: H, bottom: H };
     const margin = W < 700 ? 16 : Math.max(24, W * 0.07);
     const w = Math.min(W - 2 * margin, 1180);
     this.pad = Math.max(10, w * 0.035);
