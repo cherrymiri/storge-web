@@ -280,7 +280,7 @@ for (const [tag, vp, touch, at] of runs) {
     `light ran along the line; ${s8.answerFx.count} motes from the line gathered into the sentence (text reveal seen at ${revealSeen.filter((r) => r > 0 && r < 1).map((r) => r.toFixed(2)).join(', ')}); formation ${(s8.timeline.koDone - s8.timeline.light).toFixed(2)} s`);
   check(T('06_while_playing'), before.length >= 15 && gapBefore <= 0.45 && after.length > 0 && s8.crankEnabled,
     `answer ${gapBefore.toFixed(2)} s after the 15th note (no wait; ${before.length - 15} more notes during that moment), ${after.length} more notes played as it appeared; crank stays on`);
-  check(T('06_score_keeps_going'), sc8.cState.findIndex((x) => x === 'current') === s8.changedPlayed.at(-1) && sc8.cPass === s8.changedPass && sc8.cPass >= 1 && (sc8.cState.filter((x) => x === 'past').length > 0 || sc8.cState.every((x) => x !== 'idle')) && sc8.glyphs.length === sc3.glyphs.length,
+  check(T('06_score_keeps_going'), sc8.cState.findIndex((x) => x === 'current') === s8.changedPlayed.at(-1) && sc8.cPass === Math.floor((s8.changedCount - 1) / 12) && sc8.cPass >= 1 && (sc8.cState.filter((x) => x === 'past').length > 0 || sc8.cState.every((x) => x !== 'idle')) && sc8.glyphs.length === sc3.glyphs.length,
     `pass ${sc8.cPass + 1}: current = step ${s8.changedPlayed.at(-1)}, the previous pass stays softly lit, no extra glyphs (${sc8.glyphs.length})`);
   await grab();
 
