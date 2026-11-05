@@ -95,24 +95,20 @@ export class Overlay {
     return Math.floor(Math.min(base, base * w / bw, base * h / bh));
   }
 
-  /** size of the answer at the design size, on one line or wrapped after "그럼," */
-  answerMetrics(wrapped = false) {
+  /** size of the memo card at full scale (sizes are in % of full scale) */
+  answerMetrics() {
     const e = this.ending;
-    e.style.removeProperty('--answer-size');
-    e.classList.toggle('is-wrapped', wrapped);
-    const base = parseFloat(getComputedStyle(this.answerKo.querySelector('.ans-l2')).fontSize);   // the main line sets the size
-    const m = { base, wrapped, w: Math.max(this.answerKo.scrollWidth, e.querySelector('.answer-en').scrollWidth), h: e.offsetHeight };
-    e.classList.toggle('is-wrapped', !!this.answerBox?.wrapped);
-    return m;
+    e.style.removeProperty('--memo-scale');
+    const memo = e.querySelector('.memo');
+    return { base: 100, wrapped: false, w: memo.offsetWidth, h: memo.offsetHeight };
   }
 
-  /** centre the answer at (x, y) at a given Korean size (px) */
-  setAnswer({ x, y, size, base, wrapped = false }) {
+  /** centre the card at (x, y), scaled to `size` % (only when a small screen needs it) */
+  setAnswer({ x, y, size = 100 }) {
     const e = this.ending;
     e.style.left = `${x}px`; e.style.top = `${y}px`;
-    e.classList.toggle('is-wrapped', wrapped);
-    if (size < base) e.style.setProperty('--answer-size', `${size}px`); else e.style.removeProperty('--answer-size');
-    this.answerBox = { x, y, size, wrapped };
+    if (size < 100) e.style.setProperty('--memo-scale', (size / 100).toFixed(3)); else e.style.removeProperty('--memo-scale');
+    this.answerBox = { x, y, size };
   }
 
   /** the caption size (top prompt line) — the answer is always clearly larger */

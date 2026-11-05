@@ -146,14 +146,14 @@ export function createSceneStorge(ctx) {
     };
     // the answer keeps its size: first look for room at full size (one line, then wrapped after "그럼,"),
     // and only then step the size down — never below 1.2× the caption size (and never below 21 px)
-    // always two lines now ("그럼," / "다시 외우면 되지."); the main line never shrinks below 1.7× the captions (min 28 px)
+    // the memo card at full size if there is room, otherwise a little smaller (never covering the work)
     const one = overlay.answerMetrics(false), two = one;
-    const minSize = Math.min(Math.floor(one.base), Math.max(24, Math.round(overlay.captionSize() * 1.7)));
+    const minSize = 78;   // the memo card may shrink a little on small screens, never below 78 %
     // below minSize only as a last resort (very short screens): smaller text is better than covering the work
-    for (let size = Math.floor(one.base); size >= Math.min(minSize, 18); size--) {
+    for (let size = 100; size >= 60; size -= 2) {
       for (const m of [one]) {
         const k = size / m.base, spot = findSpot(m.w * k + 8, m.h * k + 6);
-        if (spot) { overlay.setAnswer({ x: spot.x, y: spot.y, size, base: m.base, wrapped: m.wrapped }); return; }
+        if (spot) { overlay.setAnswer({ x: spot.x, y: spot.y, size }); return; }
       }
     }
     // never expected: smallest allowed size, wrapped, in the middle of the space above the score

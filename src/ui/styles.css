@@ -83,35 +83,35 @@ html, body {
 .br-narrow { display: none; }
 @media (max-width: 480px) { .prompt-question { white-space: normal; } .br-narrow { display: inline; } }
 
-/* 06 answer: the family's voice — two lines in warm apricot, set in their own open space.
-   "그럼," small and soft; "다시 외우면 되지." the main line (PC ≈48–60 px, phones ≈30–34 px), Medium.
-   No strong glow; presence comes from scale, colour, place and how it arrives (gathered from light). */
+/* 06 answer: a small cream memo card, quietly left for the music box — the reply, not a caption.
+   Rises ~10 px while fading in (0.8 s), then stays still. Korean and English both inside the card. */
 .ending {
-  --answer-base: clamp(30px, 3.9vw, 60px);
-  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
-  text-align: center; pointer-events: none; user-select: none; width: max-content; max-width: calc(100vw - 24px);
+  position: absolute; left: 50%; top: 40%; pointer-events: none; user-select: none;
+  transform: translate(-50%, -50%) scale(var(--memo-scale, 1)) translateY(10px);
+  opacity: 0;
+  transition: opacity 0.8s ease, transform 0.85s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-.answer-ko, .answer-en { margin: 0; opacity: 0; transform: translateY(6px); white-space: nowrap; }
+.ending.show-ko { opacity: 1; transform: translate(-50%, -50%) scale(var(--memo-scale, 1)); }
+.memo {
+  width: clamp(270px, 27vw, 410px); max-width: calc(100vw - 40px); box-sizing: border-box;
+  padding: clamp(24px, 2.3vw, 34px) clamp(24px, 2.4vw, 36px);
+  background-color: #eae1d2;
+  /* a very faint paper grain */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.3 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  border-radius: 2px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+  text-align: left;
+}
+.answer-ko, .answer-en { margin: 0; }
 .answer-ko {
-  color: #f4bda9; filter: blur(7px); transform: translateY(5px);
-  /* the whole sentence comes into focus at once, right after the light has passed (≈0.8 s) */
-  transition: opacity 0.8s ease, filter 0.8s cubic-bezier(0.25, 0.6, 0.3, 1), transform 0.9s ease;
-}
-.ans-l1, .ans-l2 { display: block; }
-.ans-l1 {
-  font-size: calc(var(--answer-size, var(--answer-base)) * 0.56); font-weight: 400; line-height: 1.15;
-  letter-spacing: 0.04em; opacity: 0.86; margin-bottom: 0.12em;
-}
-.ans-l2 {
-  font-size: var(--answer-size, var(--answer-base)); font-weight: 500; line-height: 1.18; letter-spacing: -0.005em;
-  text-shadow: 0 0 28px rgba(244, 170, 140, 0.16);
+  font-size: clamp(18px, 1.55vw, 23px); font-weight: 500; line-height: 1.55; letter-spacing: 0.01em;
+  color: #453b33; word-break: keep-all;
 }
 .answer-en {
-  margin-top: 0.6em; font-size: calc(var(--answer-size, var(--answer-base)) * 0.34); font-weight: 300;
-  letter-spacing: 0.06em; color: #cbb89d;
-  transition: opacity 0.8s ease, transform 0.8s ease;
+  margin-top: 0.9em; font-size: clamp(12px, 0.95vw, 14px); font-weight: 400; letter-spacing: 0.02em;
+  color: #817569;
 }
-.ending.show-ko .answer-ko, .ending.show-en .answer-en { opacity: 1; transform: none; filter: none; }
+.ending.instant, .ending.instant * { transition: none !important; }
 
 /* "다시 감기" */
 .replay {
@@ -226,5 +226,5 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .prompt-line, .hud-bottom, .loader { transition: none; }
   .nt[data-state="finale"] .halo { animation: none; }
-  .answer-ko { filter: none; transition: opacity 0.6s ease; }
+  .ending { transform: translate(-50%, -50%) scale(var(--memo-scale, 1)); transition: opacity 0.6s ease; }
 }
