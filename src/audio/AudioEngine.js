@@ -1,5 +1,9 @@
 import { noteToFreq } from './melodyTools.js';
 
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// 0.1 s of silence (8 kHz mono WAV) — keeps iOS in "playback" mode so the silent switch does not mute the music box
+const SILENCE = 'data:audio/wav;base64,' + btoa(String.fromCharCode(82,73,70,70,36,6,0,0,87,65,86,69,102,109,116,32,16,0,0,0,1,0,1,0,64,31,0,0,64,31,0,0,1,0,8,0,100,97,116,97,0,6,0,0) + String.fromCharCode(128).repeat(1536));
+
 /**
  * Web Audio music-box synth. No audio files: each note is a few decaying partials
  * (comb-tine like) plus a tiny pluck transient, through a soft generated reverb.
@@ -23,6 +27,14 @@ export class AudioEngine {
       this.ctx = new AC();
       this.buildGraph();
       this.ctx.addEventListener?.('statechange', () => this.onState?.(this.ctx.state));
+    }
+    // iPhone / iPad: with the side switch on silent, Web Audio is muted unless the page asks for
+    // "playback" audio (Safari 16.4+), or — older iOS — a media element is playing
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch { /* not supported */ }
+    if (IOS && !this._keepAlive) {
+      this._keepAlive = new Audio(SILENCE);
+      this._keepAlive.loop = true; this._keepAlive.setAttribute('playsinline', '');
+      this._keepAlive.play().catch(() => { this._keepAlive = null; });   // only succeeds inside a tap; retried on the next one
     }
     // allowed only after a real click / tap / key (browser rule); before that this stays suspended
     if (this.ctx.state === 'suspended') this.ctx.resume().then(() => this.onState?.(this.ctx.state), () => {});

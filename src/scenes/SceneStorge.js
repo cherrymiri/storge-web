@@ -128,7 +128,6 @@ export function createSceneStorge(ctx) {
     markRect(score.box, 10);
     const rb = overlay.replayBtn.getBoundingClientRect(); mark(rb.left - 10, rb.top - 16, rb.right + 10, rb.bottom + 10);
     markRect(overlay.sound.getBoundingClientRect(), 10);
-    if (!overlay.soundStart.hidden) markRect(overlay.soundStart.getBoundingClientRect(), 10);
     // prefix sums: is a rectangle free?
     const P = new Int32Array((cols + 1) * (rows + 1));
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) P[(r + 1) * (cols + 1) + c + 1] = occ[r * cols + c] + P[r * (cols + 1) + c + 1] + P[(r + 1) * (cols + 1) + c] - P[r * (cols + 1) + c];
