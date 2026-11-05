@@ -18,7 +18,7 @@ export class Overlay {
     this.setHintMode(coarse ? 'touch' : 'wheel');
     // any real user gesture anywhere on the page unlocks audio
     for (const ev of ['pointerdown', 'pointerup', 'keydown', 'touchend', 'click']) {
-      window.addEventListener(ev, () => audio.unlock(), { capture: true, passive: true });
+      window.addEventListener(ev, () => { if (this.started) audio.unlock(); }, { capture: true, passive: true });   // before "체험 시작" only the button turns sound on
     }
     // "체험 시작": the press itself turns the sound on (a real click / tap, as every browser requires);
     // only when the sound is really running does the work begin

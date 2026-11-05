@@ -160,6 +160,7 @@ for (const [tag, vp, touch, at] of runs) {
   check(T('start_screen'), pre.btn && pre.text === '체험 시작' && sPre.notes === 0 && sPre.wound === 0 && !sPre.started && !sPre.crankEnabled && scPre.oState.every((x) => x === 'idle') && sPre.audioState !== 'running',
     `"${pre.text}" shown; ${touch ? 'swipe' : 'wheel'} before it: 0 steps, crank still, score still, sound off`);
   await pressStart(page, touch);
+  await waitFor(page, () => document.getElementById('start').hidden && +getComputedStyle(document.getElementById('hud-bottom')).opacity > 0.05, null, 20000).catch(() => {});
   const sSt = await S(page);
   const post = await page.evaluate(() => ({ gone: document.getElementById('start').hidden || getComputedStyle(document.getElementById('start')).opacity < 0.1, intro: +getComputedStyle(document.querySelector('[data-prompt="intro"]')).opacity, hint: +getComputedStyle(document.getElementById('hud-bottom')).opacity }));
   // pressing again (or a double tap) changes nothing
