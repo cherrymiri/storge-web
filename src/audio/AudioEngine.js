@@ -20,24 +20,38 @@ export class AudioEngine {
   }
 
   /** must be called from inside a user-gesture handler */
-  unlock() {
+  /**
+   * Start (or restart) sound. `gesture` = called from a real click / tap / key, the only moments
+   * Safari and Chrome allow sound to start; a wheel calls it with gesture = false (that only works
+   * where the browser already allows sound, e.g. the Claude app or an "allow auto-play" setting).
+   */
+  unlock(gesture = true) {
+    // Safari can leave a context that was created outside a gesture stuck: inside a real gesture,
+    // replace it with a fresh one
+    if (this.ctx && gesture && this.ctx.state !== 'running' && this._noGesture) {
+      try { this.ctx.close(); } catch { /* already closed */ }
+      this.ctx = null;
+    }
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       this.ctx = new AC();
+      this._noGesture = !gesture;
       this.buildGraph();
-      this.ctx.addEventListener?.('statechange', () => this.onState?.(this.ctx.state));
+      this.ctx.addEventListener?.('statechange', () => this.onState?.(this.ctx?.state));
     }
-    // iPhone / iPad: with the side switch on silent, Web Audio is muted unless the page asks for
-    // "playback" audio (Safari 16.4+), or — older iOS — a media element is playing
-    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch { /* not supported */ }
-    if (IOS && !this._keepAlive) {
-      this._keepAlive = new Audio(SILENCE);
-      this._keepAlive.loop = true; this._keepAlive.setAttribute('playsinline', '');
-      this._keepAlive.play().catch(() => { this._keepAlive = null; });   // only succeeds inside a tap; retried on the next one
+    if (IOS) {
+      // iPhone / iPad: with the side switch on silent, Web Audio is muted unless the page asks for
+      // "playback" audio (Safari 16.4+), or — older iOS — a media element is playing
+      try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch { /* not supported */ }
+      if (gesture && !this._keepAlive) {
+        this._keepAlive = new Audio(SILENCE);
+        this._keepAlive.loop = true; this._keepAlive.setAttribute('playsinline', '');
+        this._keepAlive.play().catch(() => { this._keepAlive = null; });
+      }
     }
-    // allowed only after a real click / tap / key (browser rule); before that this stays suspended
-    if (this.ctx.state === 'suspended') this.ctx.resume().then(() => this.onState?.(this.ctx.state), () => {});
+    // 'suspended' (Chrome / Safari before a gesture) or 'interrupted' (Safari): ask to run
+    if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') this.ctx.resume().then(() => this.onState?.(this.ctx?.state), () => {});
   }
 
   buildGraph() {

@@ -22,8 +22,8 @@ export class Overlay {
     }
     // a wheel / swipe also tries (works wherever the browser allows sound without a click,
     // e.g. the Claude app, a kiosk Chrome set to allow autoplay, or a site the browser already trusts)
-    window.addEventListener('wheel', () => audio.unlock(), { capture: true, passive: true });
-    window.addEventListener('touchstart', () => audio.unlock(), { capture: true, passive: true });
+    window.addEventListener('wheel', () => audio.unlock(false), { capture: true, passive: true });
+    window.addEventListener('touchstart', () => audio.unlock(false), { capture: true, passive: true });
 
     const btn = document.getElementById('sound-toggle');
     const vol = document.getElementById('sound-volume');

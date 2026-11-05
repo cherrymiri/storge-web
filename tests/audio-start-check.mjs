@@ -13,16 +13,15 @@ await p.evaluateOnNewDocument(() => {
 });
 await p.setViewport({ width: 1280, height: 720 });
 await p.goto(url, { waitUntil: 'networkidle0' }); await p.waitForFunction('window.__storgeReady');
-const st = () => p.evaluate(() => ({ ctx: window.__storge.audio.ctx?.state ?? null, button: !document.getElementById('sound-start').hidden, notes: window.__storge.state.notes, heard: window.__storge.audio.notesPlayed }));
+const st = () => p.evaluate(() => ({ ctx: window.__storge.audio.ctx?.state ?? null, button: !!document.getElementById('sound-start'), notes: window.__storge.state.notes, heard: window.__storge.audio.notesPlayed }));
 const out = { start: await st() };
 if (clickFirst) { await p.mouse.click(900, 200); out.afterClick = await st(); }
 for (let i = 0; i < 6; i++) { await p.mouse.wheel({ deltaY: 120 }); await new Promise((r) => setTimeout(r, 30)); }
 await new Promise((r) => setTimeout(r, 1200)); out.afterWheel = await st();
-if (out.afterWheel.button) {
-  const r = await p.evaluate(() => { const e = document.querySelector('.sound-start-btn').getBoundingClientRect(); return [e.left + e.width / 2, e.top + e.height / 2]; });
-  await p.mouse.click(...r); await new Promise((r) => setTimeout(r, 800)); out.afterButton = await st();
-  for (let i = 0; i < 6; i++) { await p.mouse.wheel({ deltaY: 120 }); await new Promise((r) => setTimeout(r, 30)); }
-  await new Promise((r) => setTimeout(r, 1200)); out.afterMoreWheel = await st();
-}
+// no button any more: the visitor clicks anywhere once (as Safari / Chrome require), then keeps winding
+await p.mouse.click(900, 150); await new Promise((r) => setTimeout(r, 800)); out.afterClick2 = await st();
+for (let i = 0; i < 6; i++) { await p.mouse.wheel({ deltaY: 120 }); await new Promise((r) => setTimeout(r, 30)); }
+await new Promise((r) => setTimeout(r, 1200)); out.afterMoreWheel = await st();
+out.recreated = await p.evaluate(() => window.__storge.audio._noGesture === false);
 console.log(JSON.stringify(out));
 await b.close();
