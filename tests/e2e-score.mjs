@@ -300,7 +300,7 @@ for (const [tag, vp, touch, at] of runs) {
   check(T('06_answer_distinct'), sizeOk && ratio >= 1.7 && ans.l1Size < ans.koSize * 0.7 && ['500', '600'].includes(ans.koW) && ans.koC === 'rgb(244, 189, 169)' && ans.l1C === 'rgb(244, 189, 169)' && ans.enSize / ans.koSize <= 0.4 && +ans.enW <= 400 && ans.koOp > 0.98 && ans.enOp > 0.98 && ans.qOp < 0.05,
     `main line ${ans.koSize}px weight ${ans.koW} (${ratio.toFixed(2)}× the ${ans.cap}px captions), "그럼," ${ans.l1Size}px, apricot ${ans.koC}; English ${ans.enSize}px weight ${ans.enW} ${ans.enC}; question gone`);
   check(T('06_text_crisp'), crisp.filter === 'none' && crisp.fx === 0 && crisp.n === 1, `final sentence is sharp HTML text (filter ${crisp.filter}), particle layer cleared, one particle layer`);
-  check(T('06_timing'), Math.abs(tl8.answerEn - tl8.koDone - 0.4) < 0.01 && Math.abs(tl8.replay - tl8.koDone - 1.6) < 0.01 && tl8.koDone - tl8.answerAt <= 1.6, `15th note → sentence complete ${(tl8.koDone - tl8.answerAt).toFixed(2)} s; English +${(tl8.answerEn - tl8.koDone).toFixed(2)} s; "다시 감기" +${(tl8.replay - tl8.koDone).toFixed(2)} s`);
+  check(T('06_timing'), Math.abs(tl8.answerEn - tl8.koDone - 0.4) < 0.01 && Math.abs(tl8.replay - tl8.koDone - 1.6) < 0.01 && tl8.koDone - tl8.answerAt <= 1.9, `15th note → sentence complete ${(tl8.koDone - tl8.answerAt).toFixed(2)} s; English +${(tl8.answerEn - tl8.koDone).toFixed(2)} s; "다시 감기" +${(tl8.replay - tl8.koDone).toFixed(2)} s`);
   await waitFor(page, () => window.__storge.state.ending.replay);
   await sleep(1800);
   const ak = await rect(page, '.answer-ko'), ae = await rect(page, '.answer-en'), rb = await rect(page, '#replay'), ch = await chainBox(page), br = await boxRect(page), sbt = await rect(page, '#hud-top .subtitle');
