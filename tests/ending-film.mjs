@@ -138,14 +138,14 @@ const mobile = W < 700;
 const vp = mobile ? { width: W, height: Hh, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { width: W, height: Hh, deviceScaleFactor: 1 };
 const { page, errors } = await open(vp, 4);
 const at = mobile ? (W > Hh ? [600, 330, 60] : [200, 640, 320]) : null;
-if (!mobile) await page.mouse.click(W * 0.7, Hh * 0.3);
+{ const r = await page.evaluate(() => { const e = document.getElementById('start-btn').getBoundingClientRect(); return [e.left + e.width / 2, e.top + e.height / 2]; }); if (mobile) await page.touchscreen.tap(...r); else await page.mouse.click(...r); await page.waitForFunction(() => window.__storge.state.started); }
 await windToBreak(page, mobile, at);
 await repairAll(page, mobile);
 await waitFor(page, () => window.__storge.state.againShown);
 await playChanged(page, mobile, 13, at);
 await page.evaluate(() => window.__storge.setSpeed(1));
 const frames = [];
-const grab = async () => { const f = `${OUT}/f${String(frames.length).padStart(3, '0')}.png`; await page.screenshot({ path: f }); const s = await S(page); frames.push({ f, clock: s.clock, story: s.story, fx: s.answerFx }); };
+const grab = async () => { const f = `${OUT}/f${String(frames.length).padStart(3, '0')}.png`; await page.screenshot({ path: f }); const s = await S(page); frames.push({ f, clock: s.clock, story: s.story, ko: s.koShown }); };
 for (let i = 0; i < 60; i++) {
   const s = await S(page);
   if (s.ending.en && s.clock > s.timeline.koDone + 1.0) break;
@@ -153,7 +153,7 @@ for (let i = 0; i < 60; i++) {
   await grab();
 }
 fs.writeFileSync(`${OUT}/frames.json`, JSON.stringify(frames, null, 1));
-console.log(frames.map((f) => `${f.f.split('/').pop()} ${f.clock.toFixed(2)} ${f.story} ${f.fx.reveal.toFixed(2)} ${f.fx.active}`).join('\n'));
+console.log(frames.map((f) => `${f.f.split('/').pop()} ${f.clock.toFixed(2)} ${f.story} ${f.ko}`).join('\n'));
 console.log('errors', errors);
 console.log(await page.evaluate(() => { const e = document.querySelector('.ending'); const r = e.getBoundingClientRect(); return JSON.stringify({ style: e.getAttribute('style'), r: [r.left, r.right, r.top, r.bottom].map(Math.round), fs: getComputedStyle(e.querySelector('.ans-l2')).fontSize }); }));
 await page.evaluate(() => window.__storge.scenes.current.placeAnswer());

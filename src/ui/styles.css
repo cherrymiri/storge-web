@@ -51,6 +51,26 @@ html, body {
   position: relative; margin: clamp(22px, 5vh, 56px) auto 0; height: 1.5em;
   font-weight: 400; font-size: clamp(16px, 1.75vw, 26px); letter-spacing: 0.04em;
 }
+/* "체험 시작": sits where the first caption will appear, under the title */
+.start {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 5;
+  transition: opacity 0.5s ease;
+}
+.start.is-gone { opacity: 0; pointer-events: none; }
+.start[hidden] { display: none; }
+.start-btn {
+  pointer-events: auto; cursor: pointer; font-family: inherit;
+  min-width: 168px; min-height: 48px; padding: 0 34px; border-radius: 999px;
+  font-size: 16px; font-weight: 500; letter-spacing: 0.22em; text-indent: 0.22em;
+  color: #f6e8d2; background: rgba(246, 222, 190, 0.04); border: 1px solid rgba(240, 206, 160, 0.55);
+  transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+.start-btn:hover, .start-btn:focus-visible { border-color: rgba(255, 196, 120, 0.9); background: rgba(255, 190, 110, 0.08); color: #ffe9cf; outline: none; }
+.start-btn:active { background: rgba(255, 190, 110, 0.14); }
+.start-btn[disabled] { cursor: progress; opacity: 0.7; }
+.start-note { font-size: 12px; font-weight: 300; letter-spacing: 0.03em; color: #e9b9a0; white-space: nowrap; }
+.start-note[hidden] { display: none; }
 .prompt-line {
   position: absolute; left: 0; right: 0; top: 0; white-space: nowrap;
   opacity: 0; transform: translateY(6px);
@@ -72,7 +92,11 @@ html, body {
   text-align: center; pointer-events: none; user-select: none; width: max-content; max-width: calc(100vw - 24px);
 }
 .answer-ko, .answer-en { margin: 0; opacity: 0; transform: translateY(6px); white-space: nowrap; }
-.answer-ko { color: #f4bda9; transition: opacity 0.6s ease, transform 0.6s ease; }
+.answer-ko {
+  color: #f4bda9; filter: blur(7px); transform: translateY(5px);
+  /* the whole sentence comes into focus at once, right after the light has passed (≈0.8 s) */
+  transition: opacity 0.8s ease, filter 0.8s cubic-bezier(0.25, 0.6, 0.3, 1), transform 0.9s ease;
+}
 .ans-l1, .ans-l2 { display: block; }
 .ans-l1 {
   font-size: calc(var(--answer-size, var(--answer-base)) * 0.56); font-weight: 400; line-height: 1.15;
@@ -87,12 +111,7 @@ html, body {
   letter-spacing: 0.06em; color: #cbb89d;
   transition: opacity 0.8s ease, transform 0.8s ease;
 }
-/* while the motes gather, each line comes up underneath them: blurred → sharp ("그럼," first) */
-.ending.forming .answer-ko { opacity: 1; transform: none; transition: none; }
-.ending.forming .ans-l1 { opacity: calc(0.86 * var(--r1, 0)); filter: blur(calc((1 - var(--r1, 0)) * 4px)); }
-.ending.forming .ans-l2 { opacity: var(--r2, 0); filter: blur(calc((1 - var(--r2, 0)) * 6px)); }
-.answer-fx { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
-.ending.show-ko .answer-ko, .ending.show-en .answer-en { opacity: 1; transform: none; }
+.ending.show-ko .answer-ko, .ending.show-en .answer-en { opacity: 1; transform: none; filter: none; }
 
 /* "다시 감기" */
 .replay {
@@ -207,4 +226,5 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .prompt-line, .hud-bottom, .loader { transition: none; }
   .nt[data-state="finale"] .halo { animation: none; }
+  .answer-ko { filter: none; transition: opacity 0.6s ease; }
 }

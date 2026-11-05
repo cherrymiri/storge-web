@@ -7,7 +7,6 @@ import { FragmentDrag } from '../interaction/FragmentDrag.js';
 import { CrankMelody } from '../audio/CrankMelody.js';
 import { storgeThemeChanged } from '../audio/melodies/storgeThemeChanged.js';
 import { Score } from '../ui/Score.js';
-import { AnswerParticles } from '../ui/AnswerParticles.js';
 
 const TAU = Math.PI * 2;
 
@@ -55,7 +54,7 @@ export function createSceneStorge(ctx) {
   let tl = {};                 // 04→06 timeline (story clock), set when the repair is complete
   let noteFlare = 0, spotIn = 0, spotPos = 0;
   let tones = [];              // 04 repair tones waiting for their piece to land
-  const answerFx = new AnswerParticles(overlay);
+  let started = false;          // "체험 시작" pressed and sound running: winding allowed
   let resets = 0;
   const history = [{ state, t: 0 }];
   const offs = [];
@@ -70,7 +69,7 @@ export function createSceneStorge(ctx) {
     if (s === state) return;
     state = s;
     history.push({ state: s, t: +clock.toFixed(2) });
-    crank.enabled = CAN_WIND.has(s) || (s === STATES.CHANGED && !!tl.againShown) || s === STATES.ANSWERED;
+    crank.enabled = (CAN_WIND.has(s) && started) || (s === STATES.CHANGED && !!tl.againShown) || s === STATES.ANSWERED;
     if (!crank.enabled) crank.pending = 0;
     drag.enabled = s === STATES.REPAIRING;
     bus.emit('story:state', { state: s });
@@ -164,7 +163,6 @@ export function createSceneStorge(ctx) {
   /** "다시 감기": everything back to the very start, nothing duplicated */
   function reset() {
     changed.reset();
-    answerFx.reset();
     tones = [];
     audio.resetForReplay();
     fragments.clear();
@@ -178,7 +176,7 @@ export function createSceneStorge(ctx) {
     Object.assign(strain, { taut: 0, tremor: 0, hi: 0, hz: 0 });
     state = STATES.INTRO;
     history.length = 0; history.push({ state, t: +clock.toFixed(2) });
-    crank.enabled = true; drag.enabled = false;
+    crank.enabled = started; drag.enabled = false;
     stage.melodyLight.intensity = 0;
     overlay.reset();
     score.reset();
@@ -186,20 +184,6 @@ export function createSceneStorge(ctx) {
     api.layout({ width: window.innerWidth, height: window.innerHeight });
     resets++;
     bus.emit('story:reset');
-  }
-
-  /** the angular line on screen, from the box outwards, in the shader's u (0..1) — where the light runs */
-  function lineOnScreen(n = 140) {
-    const cuts = CONFIG.story.cuts, per = fragments.pieces.map((p) => p.worldPoints(48).map((v) => drag.toScreen(v)));
-    const out = [];
-    for (let i = 0; i <= n; i++) {
-      const u = i / n;
-      let k = 0; while (k < cuts.length - 2 && u > cuts[k + 1]) k++;
-      const f = Math.min(1, Math.max(0, (u - cuts[k]) / (cuts[k + 1] - cuts[k]))) * 48, j = Math.min(47, Math.floor(f)), r = f - j;
-      const a = per[k][j], b = per[k][j + 1];
-      out.push({ x: a.x + (b.x - a.x) * r, y: a.y + (b.y - a.y) * r });
-    }
-    return out;
   }
 
   const PLAYS = () => (state === STATES.CHANGED && !!tl.againShown) || state === STATES.ANSWERED;
@@ -215,7 +199,8 @@ export function createSceneStorge(ctx) {
       tl.answerAt = clock;
       overlay.showPrompt(null);                          // the question fades (≈0.4 s)
       tl.answer = tl.light = clock + e.lightDelay;       // a light runs along the line; motes come loose from it
-      tl.koDone = tl.light + 0.1 + e.formSec;            // … and gather into the sentence
+      tl.koStart = tl.light + e.textAt;                  // … and while it is passing, the answer comes into focus
+      tl.koDone = tl.koStart + e.textSec;
       tl.answerEn = tl.koDone + e.answerEnDelay;
       tl.replay = tl.koDone + e.replayAfter;
     }
@@ -240,9 +225,8 @@ export function createSceneStorge(ctx) {
       setState(STATES.ANSWERED);                         // the crank stays enabled
       overlay.hideHint();                                // its place is taken by "다시 감기" shortly
       placeAnswer();
-      answerFx.start({ line: lineOnScreen(), t0: tl.light, sweep: e.lightSec, form: e.formSec });
     }
-    if (answerFx.active) answerFx.update(clock);
+    if (clock >= tl.koStart && !tl.koShown) { tl.koShown = true; overlay.showEnding('ko'); }
     if (clock >= tl.answerEn && !tl.enShown) { tl.enShown = true; overlay.showEnding('en'); }
     if (clock >= tl.replay && !tl.replayShown) { tl.replayShown = true; overlay.showReplay(true); }
 
@@ -289,9 +273,12 @@ export function createSceneStorge(ctx) {
       ctx.crank = crank;
       ctx.drag = drag;
 
-      for (const ev of ['crank:first-touch', 'input:press', 'input:release', 'input:wheel', 'input:touch']) {
-        offs.push(bus.on(ev, () => audio.unlock()));
+      for (const ev of ['crank:first-touch', 'input:press', 'input:release', 'input:touch']) {
+        offs.push(bus.on(ev, () => { if (started) audio.unlock(); }));
       }
+      // "체험 시작" (sound is running): from now on the crank winds
+      overlay.onStart(() => { started = true; if (CAN_WIND.has(state)) { crank.pending = 0; crank.enabled = true; } });
+      crank.enabled = started;
       offs.push(bus.on('input:wheel', () => overlay.setHintMode('wheel')));
       overlay.onReplay(() => reset());
       offs.push(bus.on('input:touch', () => { if (CAN_WIND.has(state) || PLAYS()) overlay.setHintMode('touch'); }));
@@ -338,7 +325,6 @@ export function createSceneStorge(ctx) {
       frame(width, height);
       crank.updateForwardSign();
       if (state === STATES.ANSWERED) {
-        if (answerFx.active && !answerFx.done) { answerFx.reset(); overlay.showEnding('ko'); }   // resized mid-way: just show the text
         placeAnswer();
       }     // rotate / resize: the answer finds open space again
     },
@@ -426,7 +412,7 @@ export function createSceneStorge(ctx) {
         pieces: fragments.pieces.length, connected: fragments.pieces.filter((p) => p.connected).length, nextIndex: fragments.nextIndex,
         sprinkles: fragments.sprinkles.length, melodyVisible: melody.group.visible, clock,
         changedBeat: +changed.beat.toFixed(3), changedCount: changed.count, changedPass: changed.pass, changedPlayed: [...changed.played], changedNotes: audio.changedNotes || 0,
-        answerFx: answerFx.info(), againShown: !!tl.againShown, repairTones: [...(audio.repairTones || [])], jointFlashes: fragments.jointFlashes || 0, hintPhase: overlay.hint.dataset.phase || '',
+        started, koShown: !!tl.koShown, againShown: !!tl.againShown, repairTones: [...(audio.repairTones || [])], jointFlashes: fragments.jointFlashes || 0, hintPhase: overlay.hint.dataset.phase || '',
         spot: +melody.uniforms.uSpot.value.toFixed(3), spotK: +melody.uniforms.uSpotK.value.toFixed(3), glow: +melody.uniforms.uGlow.value.toFixed(3),
         ending: overlay.endingState(), resets, timeline: tl,
         sceneMeshes: stage.scene.children.length, mirrorChildren: floor.mirrorRoot.children.length,

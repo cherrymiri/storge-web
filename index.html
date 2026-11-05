@@ -20,7 +20,12 @@
       </div>
       <p class="subtitle">가족의 사랑</p>
       <p class="prompt" aria-live="polite">
-        <span class="prompt-line is-visible" data-prompt="intro">태엽을 감아 가족의 사랑을 들려주세요.</span>
+        <span class="prompt-line" data-prompt="intro">태엽을 감아 가족의 사랑을 들려주세요.</span>
+        <!-- first screen: one real press turns the sound on (browser rule), then winding is enabled -->
+        <span class="start" id="start">
+          <button type="button" class="start-btn" id="start-btn">체험 시작</button>
+          <span class="start-note" id="start-note" hidden>소리를 켜지 못했어요. 한 번 더 눌러주세요.</span>
+        </span>
         <span class="prompt-line" data-prompt="winding">사랑이 가득 차오르고 있어요.</span>
         <span class="prompt-line" data-prompt="broken">사랑과 미움이 뒤엉켜, 선율이 깨졌어요.</span>
         <span class="prompt-line" data-prompt="repair">깨진 선율을 다시 이어주세요.</span>
@@ -37,7 +42,7 @@
     <!-- the small staff: drawn from the same melody data the music box plays -->
     <div class="score" id="score" data-mode="play"></div>
 
-    <footer class="hud-bottom" id="hud-bottom">
+    <footer class="hud-bottom is-hidden" id="hud-bottom">
       <p class="hint" id="hint" data-mode="wheel">
         <svg class="hint-icon hint-mouse" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="5.5"/><line x1="12" y1="6.5" x2="12" y2="9.5"/></svg>
         <svg class="hint-icon hint-hand" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.6-2.2L4.5 15.6a1.5 1.5 0 0 1 2.3-1.9L9 16"/></svg>

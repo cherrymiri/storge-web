@@ -102,8 +102,9 @@ export const CONFIG = {
     answerAfterNotes: 15,     // the answer comes with the 15th note: the whole phrase + "E G C" of the next pass
     lightDelay: 0.15,         // 15th note → a light starts along the angular line (the question is fading, ≈0.4 s)
     lightSec: 0.9,            // the light's single run from the box to the end of the line
-    formSec: 1.6,             // first mote → "그럼," (at 60 %) → "다시 외우면 되지." complete: motes gathering into the words
-    answerEnDelay: 0.4,       // complete Korean line → the English line fades in
+    textAt: 0.45,             // light start → the answer starts coming into focus (the light is half-way along)
+    textSec: 0.8,             // the whole sentence goes from blurred to sharp
+    answerEnDelay: 0.35,      // complete Korean line → the English line fades in
     replayAfter: 1.6,         // complete Korean line → "다시 감기"
     spotWidth: 0.05,          // the small light on the line that follows the visitor's playing (share of length)
     spotBase: 0.2,            // its steady brightness while playing ...

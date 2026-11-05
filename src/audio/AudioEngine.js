@@ -54,6 +54,22 @@ export class AudioEngine {
     if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') this.ctx.resume().then(() => this.onState?.(this.ctx?.state), () => {});
   }
 
+  /** resolves true once the context is running (or false after `ms`) */
+  whenRunning(ms = 2000) {
+    if (!this.ctx) return Promise.resolve(false);
+    if (this.ctx.state === 'running') return Promise.resolve(true);
+    return new Promise((res) => {
+      const t0 = performance.now();
+      const tick = () => {
+        if (this.ctx?.state === 'running') return res(true);
+        if (performance.now() - t0 > ms) return res(false);
+        setTimeout(tick, 50);
+      };
+      this.ctx.resume().catch(() => {});
+      tick();
+    });
+  }
+
   buildGraph() {
     const c = this.ctx;
     this.master = c.createGain();

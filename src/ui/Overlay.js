@@ -20,10 +20,13 @@ export class Overlay {
     for (const ev of ['pointerdown', 'pointerup', 'keydown', 'touchend', 'click']) {
       window.addEventListener(ev, () => audio.unlock(), { capture: true, passive: true });
     }
-    // a wheel / swipe also tries (works wherever the browser allows sound without a click,
-    // e.g. the Claude app, a kiosk Chrome set to allow autoplay, or a site the browser already trusts)
-    window.addEventListener('wheel', () => audio.unlock(false), { capture: true, passive: true });
-    window.addEventListener('touchstart', () => audio.unlock(false), { capture: true, passive: true });
+    // "체험 시작": the press itself turns the sound on (a real click / tap, as every browser requires);
+    // only when the sound is really running does the work begin
+    this.start = document.getElementById('start');
+    this.startBtn = document.getElementById('start-btn');
+    this.startNote = document.getElementById('start-note');
+    this.started = false;
+    this.startBtn.addEventListener('click', () => this.pressStart());
 
     const btn = document.getElementById('sound-toggle');
     const vol = document.getElementById('sound-volume');
@@ -58,6 +61,27 @@ export class Overlay {
   hintTop() { return this.bottom.querySelector('.hint').getBoundingClientRect().top; }
 
   showSoundTip() {}
+
+  onStart(cb) { this.startCb = cb; }
+
+  async pressStart() {
+    if (this.started || this._starting) return;          // repeated presses do nothing extra
+    this._starting = true;
+    this.audio.unlock(true);                             // inside the click: allowed to start sound
+    this.startBtn.disabled = true;
+    const ok = await this.audio.whenRunning(2000);
+    this._starting = false;
+    this.startBtn.disabled = false;
+    if (!ok) { this.startNote.hidden = false; this.startBtn.focus(); return; }   // stays: try again
+    this.started = true;
+    this.startNote.hidden = true;
+    this.start.classList.add('is-gone');
+    this.startBtn.tabIndex = -1;
+    setTimeout(() => { this.start.hidden = true; }, 500);
+    this.showPrompt('intro');
+    this.bottom.classList.remove('is-hidden');
+    this.startCb?.();
+  }
 
   // ---- 06 ending ----
   onReplay(cb) { this.replayCb = cb; }

@@ -39,6 +39,13 @@ async function open(viewport, speed = 1, reducedMotion = false) {
   return { page, errors };
 }
 const S = (page) => page.evaluate(() => window.__storge.state);
+/** "체험 시작": before it nothing winds; one press (click / tap) turns the sound on and starts */
+async function pressStart(page, touch) {
+  const r = await page.evaluate(() => { const e = document.getElementById('start-btn').getBoundingClientRect(); return [e.left + e.width / 2, e.top + e.height / 2]; });
+  if (touch) await page.touchscreen.tap(...r); else await page.mouse.click(...r);
+  await page.waitForFunction(() => window.__storge.state.started, { timeout: 30000 });
+  await sleep(600);
+}
 const SC = (page) => page.evaluate(() => window.__storge.score());
 const waitFor = (page, fn, arg, timeout = 600000) => page.waitForFunction(fn, { timeout, polling: 200 }, arg);
 const settle = (page) => waitFor(page, () => Math.abs(window.__storge.state.pending) < 1e-6);
@@ -146,7 +153,18 @@ for (const [tag, vp, touch, at] of runs) {
   const s0 = await S(page);
   const mats = await page.evaluate(() => { const o = {}; window.__storge.musicBox.root.traverse((m) => { if (m.isMesh) o[m.material.name] = [m.material.map ? m.material.map.image.width : 0, m.material.metalness]; }); return o; });
   check(T('01_model'), s0.story === 'INTRO' && mats.M_Maple_Wood[0] === 1024 && mats.M_RoseGold_Copper[1] === 1, 'GLB music box with maple wood texture and rose-gold crank');
-  if (!touch) { await page.mouse.move(1100, 450); await page.mouse.click(1100, 300); }
+  // before "체험 시작": winding does nothing (no sound, no crank, no score)
+  const pre = await page.evaluate(() => ({ btn: !!document.getElementById('start-btn').offsetParent, text: document.getElementById('start-btn').textContent, intro: +getComputedStyle(document.querySelector('[data-prompt="intro"]')).opacity }));
+  await wind(page, touch, touch ? 1 : 6, at); await sleep(800);
+  const sPre = await S(page), scPre = await SC(page);
+  check(T('start_screen'), pre.btn && pre.text === '체험 시작' && sPre.notes === 0 && sPre.wound === 0 && !sPre.started && !sPre.crankEnabled && scPre.oState.every((x) => x === 'idle') && sPre.audioState !== 'running',
+    `"${pre.text}" shown; ${touch ? 'swipe' : 'wheel'} before it: 0 steps, crank still, score still, sound off`);
+  await pressStart(page, touch);
+  const sSt = await S(page);
+  const post = await page.evaluate(() => ({ gone: document.getElementById('start').hidden || getComputedStyle(document.getElementById('start')).opacity < 0.1, intro: +getComputedStyle(document.querySelector('[data-prompt="intro"]')).opacity, hint: +getComputedStyle(document.getElementById('hud-bottom')).opacity }));
+  // pressing again (or a double tap) changes nothing
+  await page.evaluate(() => document.getElementById('start-btn').click());
+  check(T('start_turns_sound_on'), sSt.audioState === 'running' && sSt.crankEnabled && post.gone && sSt.prompt === 'intro' && post.hint > 0.05, `after one ${touch ? 'tap' : 'click'}: sound ${sSt.audioState}, crank on, button gone, "태엽을 감아 가족의 사랑을 들려주세요." shown`);
   const body0 = await page.evaluate(() => window.__storge.bodyMatrix());
 
   // ---- 01: score before playing
@@ -255,14 +273,13 @@ for (const [tag, vp, touch, at] of runs) {
   const s7 = await S(page), sc7 = await SC(page);
   check(T('05_all_12_and_on'), s7.changedCount >= 12 && s7.crankEnabled && s7.story === 'CHANGED', `${s7.changedCount} notes played, crank still on`);
   await playChanged(page, touch, 99, null, (st) => st.story === 'ANSWERED', grab);
-  // keep winding as the answer arrives; photograph the motes leaving the line and the finished sentence
-  let shotStart = false, shotForm = false, revealSeen = [];
+  // keep winding as the answer arrives; photograph the light on the line and the answer coming into focus
+  let shotLight = false, shotText = false;
   for (let i = 0; i < 40; i++) {
     const st = await S(page);
-    revealSeen.push(st.answerFx.reveal); (globalThis.__r1 ||= []).push([st.answerFx.reveal1, st.answerFx.reveal]);
-    if (!shotStart && st.answerFx.active && st.answerFx.reveal === 0 && st.clock > st.timeline.light + 0.2) { shotStart = true; await page.screenshot({ path: `${OUT}/${tag}_06_particles_start.png` }); }
-    else if (!shotForm && st.answerFx.reveal > 0.2 && st.answerFx.reveal < 0.95) { shotForm = true; await page.screenshot({ path: `${OUT}/${tag}_06_particles_forming.png` }); }
-    if (st.ending.ko && i > 8) break;
+    if (!shotLight && st.timeline.light !== undefined && st.clock >= st.timeline.light + 0.2 && !st.koShown) { shotLight = true; await page.screenshot({ path: `${OUT}/${tag}_06_light.png` }); }
+    else if (!shotText && st.koShown && st.clock < st.timeline.koDone) { shotText = true; await page.screenshot({ path: `${OUT}/${tag}_06_focus.png` }); }
+    if (st.ending.ko && st.clock > st.timeline.koDone + 0.3 && i > 4) break;
     if (i % 2 === 0) await wind(page, touch, 1);
     await grab();
   }
@@ -276,8 +293,9 @@ for (const [tag, vp, touch, at] of runs) {
   const n11 = nts.find((e) => e.d.index === 11 && e.d.pass === 0), n12 = nts.find((e) => e.d.pass === 1 && e.d.index === 0);
   check(T('05_repeat_keeps_last_note'), n12 && n11.beat >= 10 - 1e-6 && n12.beat >= 12 - 1e-6 && nts.slice(0, 15).map((e) => e.d.index).join() === '0,1,2,3,4,5,6,7,8,9,10,11,0,1,2',
     `order 0…11 then 0,1,2 again; the last note (C, half note) at beat ${n11.beat.toFixed(2)}, the phrase came round at beat ${n12.beat.toFixed(2)} (repeat at 12 beats = after the full 2 beats, not at 10)`);
-  check(T('06_light_and_motes'), s8.timeline.lightRun && s8.answerFx.count >= (touch ? 300 : 600) && s8.answerFx.started === 1 && revealSeen.some((r) => r > 0 && r < 1) && revealSeen.at(-1) === 1 && !s8.answerFx.reduced,
-    `light ran along the line; ${s8.answerFx.count} motes from the line gathered into the sentence (text reveal seen at ${revealSeen.filter((r) => r > 0 && r < 1).map((r) => r.toFixed(2)).join(', ')}); formation ${(s8.timeline.koDone - s8.timeline.light).toFixed(2)} s`);
+  const noFx = await page.evaluate(() => document.querySelectorAll('.answer-fx, canvas').length);
+  check(T('06_light_then_text'), s8.timeline.lightRun && s8.koShown && noFx === 1 && Math.abs(s8.timeline.koStart - s8.timeline.light - 0.45) < 0.01 && Math.abs(s8.timeline.koDone - s8.timeline.koStart - 0.8) < 0.01,
+    `a light ran once along the angular line; ${(s8.timeline.koStart - s8.timeline.light).toFixed(2)} s into it the whole sentence came into focus over ${(s8.timeline.koDone - s8.timeline.koStart).toFixed(2)} s; no particle layer (only the 3D canvas)`);
   check(T('06_while_playing'), before.length >= 15 && gapBefore <= 0.45 && after.length > 0 && s8.crankEnabled,
     `answer ${gapBefore.toFixed(2)} s after the 15th note (no wait; ${before.length - 15} more notes during that moment), ${after.length} more notes played as it appeared; crank stays on`);
   check(T('06_score_keeps_going'), sc8.cState.findIndex((x) => x === 'current') === s8.changedPlayed.at(-1) && sc8.cPass === Math.floor((s8.changedCount - 1) / 12) && sc8.cPass >= 1 && (sc8.cState.filter((x) => x === 'past').length > 0 || sc8.cState.every((x) => x !== 'idle')) && sc8.glyphs.length === sc3.glyphs.length,
@@ -292,15 +310,13 @@ for (const [tag, vp, touch, at] of runs) {
   const tl8 = s8.timeline;
   check(T('06_answer_text'), ans.ko === '그럼, 다시 외우면 되지.' && ans.en === "Then I'll learn it again.", `"${ans.ko}" / "${ans.en}"`);
   const ratio = ans.koSize / ans.cap;
-  const crisp = await page.evaluate(() => ({ filter: [...document.querySelectorAll('.ans-l1, .ans-l2')].map((x) => getComputedStyle(x).filter).every((f) => f === 'none') ? 'none' : 'blur', fx: +getComputedStyle(document.querySelector('.answer-fx')).opacity, n: document.querySelectorAll('.answer-fx').length }));
+  const crisp = await page.evaluate(() => ({ filter: [...document.querySelectorAll('.ans-l1, .ans-l2')].map((x) => getComputedStyle(x).filter).every((f) => f === 'none') ? 'none' : 'blur', fx: 0, n: document.querySelectorAll('.answer-fx').length }));
   const sizeOk = touch ? ans.koSize >= 28 && ans.koSize <= 40 : ans.koSize >= 48 && ans.koSize <= 64;
-  const order = (globalThis.__r1 || []).some(([a, b]) => a >= 0.95 && b < 0.6);
-  globalThis.__r1 = [];
-  check(T('06_two_lines_in_order'), ans.twoLines && order, '"그럼," on its own line, formed first (complete while the main line was still forming); "다시 외우면 되지." below');
+  check(T('06_two_lines'), ans.twoLines, '"그럼," on its own line, "다시 외우면 되지." below it, larger');
   check(T('06_answer_distinct'), sizeOk && ratio >= 1.7 && ans.l1Size < ans.koSize * 0.7 && ['500', '600'].includes(ans.koW) && ans.koC === 'rgb(244, 189, 169)' && ans.l1C === 'rgb(244, 189, 169)' && ans.enSize / ans.koSize <= 0.4 && +ans.enW <= 400 && ans.koOp > 0.98 && ans.enOp > 0.98 && ans.qOp < 0.05,
     `main line ${ans.koSize}px weight ${ans.koW} (${ratio.toFixed(2)}× the ${ans.cap}px captions), "그럼," ${ans.l1Size}px, apricot ${ans.koC}; English ${ans.enSize}px weight ${ans.enW} ${ans.enC}; question gone`);
-  check(T('06_text_crisp'), crisp.filter === 'none' && crisp.fx === 0 && crisp.n === 1, `final sentence is sharp HTML text (filter ${crisp.filter}), particle layer cleared, one particle layer`);
-  check(T('06_timing'), Math.abs(tl8.answerEn - tl8.koDone - 0.4) < 0.01 && Math.abs(tl8.replay - tl8.koDone - 1.6) < 0.01 && tl8.koDone - tl8.answerAt <= 1.9, `15th note → sentence complete ${(tl8.koDone - tl8.answerAt).toFixed(2)} s; English +${(tl8.answerEn - tl8.koDone).toFixed(2)} s; "다시 감기" +${(tl8.replay - tl8.koDone).toFixed(2)} s`);
+  check(T('06_text_crisp'), crisp.filter === 'none' && crisp.n === 0, `final sentence is sharp HTML text (filter ${crisp.filter}), no particle layer at all`);
+  check(T('06_timing'), Math.abs(tl8.answerEn - tl8.koDone - 0.35) < 0.01 && Math.abs(tl8.replay - tl8.koDone - 1.6) < 0.01 && tl8.koDone - tl8.answerAt <= 1.6, `15th note → sentence complete ${(tl8.koDone - tl8.answerAt).toFixed(2)} s; English +${(tl8.answerEn - tl8.koDone).toFixed(2)} s; "다시 감기" +${(tl8.replay - tl8.koDone).toFixed(2)} s`);
   await waitFor(page, () => window.__storge.state.ending.replay);
   await sleep(1800);
   const ak = await rect(page, '.answer-ko'), ae = await rect(page, '.answer-en'), rb = await rect(page, '#replay'), ch = await chainBox(page), br = await boxRect(page), sbt = await rect(page, '#hud-top .subtitle');
@@ -353,7 +369,7 @@ for (const [tag, vp, touch, at] of runs) {
   const conds = { story: r.story === 'INTRO', wound: r.wound === 0, crank: Math.abs(r.crankAngle) <= 0.29, line: !r.melodyVisible && r.progress === 0, tension: r.tremor === 0 && r.taut === 0,
     pieces: r.pieces === 0, repaired: r.connected === 0, music: !r.musicStopped && r.notes === 0 && r.shatterPlayed === 0, changedMelody: r.changedCount === 0 && r.changedBeat === 0,
     scoreProgress: rs.oState.every((x) => x === 'idle') && rs.cState.every((x) => x === 'idle') && rs.cPass === 0, scoreView: rs.page === 'o0' && rs.mode === 'play', texts: r.prompt === 'intro' && r.hintPhase === '' && hintOp > 0.9,
-    ending: !r.ending.ko && !r.ending.en && !r.ending.replay && !r.answerFx.active && r.answerFx.reveal === 0, inputs: r.crankEnabled && !r.dragEnabled, light: r.spotK === 0 && r.glow === 1, tones: r.repairTones.length === 0 };
+    ending: !r.ending.ko && !r.ending.en && !r.ending.replay && !r.koShown, started: r.started && r.audioState === 'running' && (await page.evaluate(() => document.getElementById('start').hidden)), inputs: r.crankEnabled && !r.dragEnabled, light: r.spotK === 0 && r.glow === 1, tones: r.repairTones.length === 0 };
   const bad = Object.entries(conds).filter(([, v]) => !v).map(([k]) => k);
   check(T('replay_resets_everything'), bad.length === 0, bad.length ? `not reset: ${bad.join(', ')}` : `all ${Object.keys(conds).length} groups back to 01`);
   check(T('replay_no_leftovers'), c1.scene === c0.scene && c1.mirror === c0.mirror && c1.notes === c0.notes, `scene objects ${c0.scene}→${c1.scene}, reflections ${c0.mirror}→${c1.mirror}, score glyphs ${c0.notes}→${c1.notes}`);
@@ -370,8 +386,8 @@ for (const [tag, vp, touch, at] of runs) {
   await waitFor(page, () => window.__storge.state.ending.replay);
   const r3 = await S(page), log2 = await page.evaluate((n) => window.__storge.audio.playedLog.slice(n).map((l) => l.theme), n0);
   const fxN = await page.evaluate(() => document.querySelectorAll('.answer-fx').length);
-  check(T('second_run_ok'), fxN === 1 && r3.answerFx.started === 1 && r2.shatterPlayed === 1 && r2.pieces === 5 && r2.changedCount === 0 && log2.filter((t) => t.includes('changed')).length === r3.changedCount && r3.changedCount >= 19 && r3.repairTones.length === 4 && r3.story === 'ANSWERED' && r3.crankEnabled && (await counts(page)).notes === c0.notes,
-    `again: one "쨍", 5 pieces, 4 repair tones, ${r3.changedCount} changed notes = ${r3.changedCount} sounds (no doubling), ending reached while playing, particles once (layers: ${fxN})`);
+  check(T('second_run_ok'), fxN === 0 && r3.koShown && r2.shatterPlayed === 1 && r2.pieces === 5 && r2.changedCount === 0 && log2.filter((t) => t.includes('changed')).length === r3.changedCount && r3.changedCount >= 19 && r3.repairTones.length === 4 && r3.story === 'ANSWERED' && r3.crankEnabled && (await counts(page)).notes === c0.notes,
+    `again: one "쨍", 5 pieces, 4 repair tones, ${r3.changedCount} changed notes = ${r3.changedCount} sounds (no doubling), ending reached while playing, light + answer again`);
   const wp = await page.evaluate(() => window.__wheelPrevented);
   check(T('no_page_scroll'), (await page.evaluate(() => window.scrollY)) === 0 && (touch || wp.every(Boolean)), touch ? 'page never scrolled' : `${wp.length} wheel events, all kept from scrolling`);
   check(T('console_clean'), errors.length === 0, errors.slice(0, 3).join(' | ') || '0 errors');
@@ -383,6 +399,7 @@ if (!ONLY || ONLY === 'landscape') {
   const vp = { width: 844, height: 390, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
   const { page, errors } = await open(vp, 4, true);
   const at = [600, 330, 60];
+  await pressStart(page, true);
   const sc0 = await SC(page), br0 = await boxRect(page), hint = await rect(page, '#hint'), top = await rect(page, '#hud-top');
   check('landscape_01_layout', !overlaps(sc0.box, br0) && !overlaps(sc0.box, hint) && sc0.box.y0 > top.y1 && sc0.s >= 6.5, `score ${R(sc0.box)} (line gap ${sc0.s.toFixed(1)} px), box ${R(br0)}, hint ${R(hint)}`);
   await page.screenshot({ path: `${OUT}/landscape_01.png` });
@@ -397,7 +414,7 @@ if (!ONLY || ONLY === 'landscape') {
   const ak = await rect(page, '.answer-ko'), ae = await rect(page, '.answer-en'), rb = await rect(page, '#replay'), ch = await chainBox(page), br = await boxRect(page), sb = (await SC(page)).box;
   const lks = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.ans-l2')).fontSize));
   const lst = await S(page);
-  check('landscape_reduced_motion', lst.answerFx.reduced && lst.answerFx.count === 0 && lst.ending.ko && lst.ending.en, 'with "reduce motion": no particles, the sentence simply fades in; English follows');
+  check('landscape_reduced_motion', lst.ending.ko && lst.ending.en && (await page.evaluate(() => getComputedStyle(document.querySelector('.answer-ko')).filter)) === 'none', 'with "reduce motion": the sentence simply fades in (no blur); English follows');
   check('landscape_06_layout', lks >= 24 && !hitsLine(ak, ch.pts) && !hitsLine(ae, ch.pts) && !overlaps(ak, br) && !overlaps(ae, rb) && !overlaps(ae, sb) && !overlaps(rb, sb) && ak.x0 >= 8 && ak.x1 <= 836 && ak.y0 >= 0 && ae.y1 <= 390,
     `answer ${R({ ...ak, y1: ae.y1 })} at ${lks}px, score ${R(sb)}, button ${R(rb)} in 844×390`);
   await page.screenshot({ path: `${OUT}/landscape_06.png` });
