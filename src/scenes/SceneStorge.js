@@ -117,7 +117,7 @@ export function createSceneStorge(ctx) {
       for (let r = r0; r <= r1; r++) occ.fill(1, r * cols + c0, r * cols + c1 + 1);
     };
     const markRect = (r, m) => mark(r.left - m, r.top - m, r.right + m, r.bottom + m);
-    const glow = 22;
+    const glow = 16;
     for (const p of fragments.pieces) for (const q of p.worldPoints(40)) { const v = toS(q); mark(v.x - glow, v.y - glow, v.x + glow, v.y + glow); }
     const b = musicBox.box; let bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
     for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
@@ -128,6 +128,7 @@ export function createSceneStorge(ctx) {
     markRect(score.box, 10);
     const rb = overlay.replayBtn.getBoundingClientRect(); mark(rb.left - 10, rb.top - 16, rb.right + 10, rb.bottom + 10);
     markRect(overlay.sound.getBoundingClientRect(), 10);
+    if (!overlay.soundStart.hidden) markRect(overlay.soundStart.getBoundingClientRect(), 10);
     // prefix sums: is a rectangle free?
     const P = new Int32Array((cols + 1) * (rows + 1));
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) P[(r + 1) * (cols + 1) + c + 1] = occ[r * cols + c] + P[r * (cols + 1) + c + 1] + P[(r + 1) * (cols + 1) + c] - P[r * (cols + 1) + c];
@@ -147,10 +148,12 @@ export function createSceneStorge(ctx) {
     };
     // the answer keeps its size: first look for room at full size (one line, then wrapped after "그럼,"),
     // and only then step the size down — never below 1.2× the caption size (and never below 21 px)
-    const one = overlay.answerMetrics(false), two = overlay.answerMetrics(true);
-    const minSize = Math.min(Math.floor(one.base), Math.max(21, Math.round(overlay.captionSize() * 1.2)));
-    for (let size = Math.floor(one.base); size >= minSize; size--) {
-      for (const m of [one, two]) {
+    // always two lines now ("그럼," / "다시 외우면 되지."); the main line never shrinks below 1.7× the captions (min 28 px)
+    const one = overlay.answerMetrics(false), two = one;
+    const minSize = Math.min(Math.floor(one.base), Math.max(24, Math.round(overlay.captionSize() * 1.7)));
+    // below minSize only as a last resort (very short screens): smaller text is better than covering the work
+    for (let size = Math.floor(one.base); size >= Math.min(minSize, 18); size--) {
+      for (const m of [one]) {
         const k = size / m.base, spot = findSpot(m.w * k + 8, m.h * k + 6);
         if (spot) { overlay.setAnswer({ x: spot.x, y: spot.y, size, base: m.base, wrapped: m.wrapped }); return; }
       }
@@ -269,6 +272,7 @@ export function createSceneStorge(ctx) {
   }
 
   const api = {
+    placeAnswer: () => placeAnswer(),   // debug / tests
     async enter() {
       stage.scene.add(melody.group);
       melody.setMirrorFade((m) => floor.constructor.fadeMaterial(m, CONFIG.melody.reflectionGain));

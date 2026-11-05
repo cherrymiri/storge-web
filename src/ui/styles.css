@@ -63,33 +63,35 @@ html, body {
 .br-narrow { display: none; }
 @media (max-width: 480px) { .prompt-question { white-space: normal; } .br-narrow { display: inline; } }
 
-/* 06 answer: the family's voice. Set apart by how it arrives (gathered from the melody's light), its warm
-   rose-champagne colour, its own open place in the middle — and only a little larger than the captions
-   (×1.32), Medium weight, no glow on the letters. The English line small, light, beige. */
+/* 06 answer: the family's voice — two lines in warm apricot, set in their own open space.
+   "그럼," small and soft; "다시 외우면 되지." the main line (PC ≈48–60 px, phones ≈30–34 px), Medium.
+   No strong glow; presence comes from scale, colour, place and how it arrives (gathered from light). */
 .ending {
-  --answer-base: max(21px, calc(1.32 * clamp(16px, 1.75vw, 26px)));   /* captions 16–26 px → 21–34 px */
+  --answer-base: clamp(30px, 3.9vw, 60px);
   position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%);
-  text-align: center; pointer-events: none; user-select: none; width: max-content; max-width: calc(100vw - 32px);
+  text-align: center; pointer-events: none; user-select: none; width: max-content; max-width: calc(100vw - 24px);
 }
 .answer-ko, .answer-en { margin: 0; opacity: 0; transform: translateY(6px); white-space: nowrap; }
-.answer-ko {
-  font-size: var(--answer-size, var(--answer-base)); font-weight: 500; letter-spacing: 0.02em; line-height: 1.3;
-  color: #f4bda9;
-  transition: opacity 0.6s ease, transform 0.6s ease;
+.answer-ko { color: #f4bda9; transition: opacity 0.6s ease, transform 0.6s ease; }
+.ans-l1, .ans-l2 { display: block; }
+.ans-l1 {
+  font-size: calc(var(--answer-size, var(--answer-base)) * 0.56); font-weight: 400; line-height: 1.15;
+  letter-spacing: 0.04em; opacity: 0.86; margin-bottom: 0.12em;
+}
+.ans-l2 {
+  font-size: var(--answer-size, var(--answer-base)); font-weight: 500; line-height: 1.18; letter-spacing: -0.005em;
+  text-shadow: 0 0 28px rgba(244, 170, 140, 0.16);
 }
 .answer-en {
-  margin-top: 0.75em; font-size: calc(var(--answer-size, var(--answer-base)) * 0.5); font-weight: 300;
-  letter-spacing: 0.05em; color: #cbb89d;
+  margin-top: 0.6em; font-size: calc(var(--answer-size, var(--answer-base)) * 0.34); font-weight: 300;
+  letter-spacing: 0.06em; color: #cbb89d;
   transition: opacity 0.8s ease, transform 0.8s ease;
 }
-/* while the motes gather, the real text comes up underneath them: blurred → sharp */
-.ending.forming .answer-ko {
-  opacity: var(--ko-reveal, 0); transform: none; transition: none;
-  filter: blur(calc((1 - var(--ko-reveal, 0)) * 5px));
-}
+/* while the motes gather, each line comes up underneath them: blurred → sharp ("그럼," first) */
+.ending.forming .answer-ko { opacity: 1; transform: none; transition: none; }
+.ending.forming .ans-l1 { opacity: calc(0.86 * var(--r1, 0)); filter: blur(calc((1 - var(--r1, 0)) * 4px)); }
+.ending.forming .ans-l2 { opacity: var(--r2, 0); filter: blur(calc((1 - var(--r2, 0)) * 6px)); }
 .answer-fx { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
-.ans-br { display: none; }
-.ending.is-wrapped .ans-br { display: inline; }   /* narrow screens: "그럼," / "다시 외우면 되지." */
 .ending.show-ko .answer-ko, .ending.show-en .answer-en { opacity: 1; transform: none; }
 
 /* "다시 감기" */
@@ -180,13 +182,22 @@ html, body {
 .sound-btn:focus-visible { outline: 1px solid var(--ivory); outline-offset: 3px; }
 .sound-vol { width: 84px; accent-color: #e8b98a; }
 /* only shown when a wheel-only visitor has winding going but the browser still blocks sound */
-.sound-tip {
-  position: absolute; right: calc(100% + 12px); top: 50%; margin-top: -0.75em;   /* takes no space: never blocks the 3D area */
-  font-size: 12px; font-weight: 300; color: var(--ivory-dim); letter-spacing: 0.03em; white-space: nowrap;
-  opacity: 0; transform: translateX(6px); transition: opacity 0.8s ease, transform 0.8s ease; pointer-events: none;
+.sound-start {
+  position: absolute; left: 50%; top: calc(var(--prompt-bottom, 30vh) + 14px); transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 7px; z-index: 5;
+  animation: sound-start-in 0.6s ease both;
 }
-.sound.has-tip { opacity: 1; }
-.sound.has-tip .sound-tip { opacity: 1; transform: none; }
+/* [hidden] must win over display:flex above */
+.sound-start[hidden] { display: none; }
+@keyframes sound-start-in { from { opacity: 0; transform: translate(-50%, 4px); } }
+.sound-start-btn {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer; pointer-events: auto;
+  padding: 9px 18px 9px 14px; border-radius: 999px; border: 1px solid rgba(244, 236, 222, 0.32);
+  background: rgba(20, 16, 12, 0.6); color: var(--ivory); font: 400 14px/1 inherit; font-family: inherit; letter-spacing: 0.02em;
+}
+.sound-start-btn:hover, .sound-start-btn:focus-visible { border-color: rgba(244, 236, 222, 0.6); outline: none; }
+.sound-start-btn svg { width: 18px; height: 18px; }
+.sound-start-note { font-size: 11px; font-weight: 300; color: var(--ivory-dim); letter-spacing: 0.03em; }
 
 /* ---------- loader ---------- */
 .loader { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; transition: opacity 0.9s ease; }
@@ -199,7 +210,6 @@ html, body {
 @media (max-width: 640px) {
   .hint-text { font-size: 12px; }
   .hint { gap: 10px; }
-  .sound-tip { display: none; }
   .sound-vol { display: none; }
   .prompt { font-size: 16px; }
 }

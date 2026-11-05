@@ -22,8 +22,10 @@ export class AudioEngine {
       if (!AC) return;
       this.ctx = new AC();
       this.buildGraph();
+      this.ctx.addEventListener?.('statechange', () => this.onState?.(this.ctx.state));
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    // allowed only after a real click / tap / key (browser rule); before that this stays suspended
+    if (this.ctx.state === 'suspended') this.ctx.resume().then(() => this.onState?.(this.ctx.state), () => {});
   }
 
   buildGraph() {

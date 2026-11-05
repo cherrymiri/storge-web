@@ -155,4 +155,7 @@ for (let i = 0; i < 60; i++) {
 fs.writeFileSync(`${OUT}/frames.json`, JSON.stringify(frames, null, 1));
 console.log(frames.map((f) => `${f.f.split('/').pop()} ${f.clock.toFixed(2)} ${f.story} ${f.fx.reveal.toFixed(2)} ${f.fx.active}`).join('\n'));
 console.log('errors', errors);
+console.log(await page.evaluate(() => { const e = document.querySelector('.ending'); const r = e.getBoundingClientRect(); return JSON.stringify({ style: e.getAttribute('style'), r: [r.left, r.right, r.top, r.bottom].map(Math.round), fs: getComputedStyle(e.querySelector('.ans-l2')).fontSize }); }));
+await page.evaluate(() => window.__storge.scenes.current.placeAnswer());
+console.log('re-placed', await page.evaluate(() => document.querySelector('.ending').getAttribute('style')));
 await browser.close();

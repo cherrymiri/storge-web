@@ -16,10 +16,22 @@ export class Overlay {
     // touch-first devices (phones, tablets) get the swipe hint; it also switches on first real input
     const coarse = window.matchMedia?.('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && !window.matchMedia?.('(hover: hover)').matches);
     this.setHintMode(coarse ? 'touch' : 'wheel');
-    // any real user gesture anywhere on the page may unlock audio (a wheel alone cannot)
+    // any real user gesture anywhere on the page unlocks audio
     for (const ev of ['pointerdown', 'pointerup', 'keydown', 'touchend', 'click']) {
       window.addEventListener(ev, () => audio.unlock(), { capture: true, passive: true });
     }
+    // the first wheel / swipe also tries; browsers only allow sound after a click, tap or key
+    // (a wheel never counts), so if the sound stays off we offer one small button
+    this.soundStart = document.getElementById('sound-start');
+    this.soundStart.querySelector('button').addEventListener('click', () => {
+      audio.unlock();
+      if (audio.muted) document.getElementById('sound-toggle').click();
+      this.checkAudio();
+    });
+    const tryAudio = () => { audio.unlock(); clearTimeout(this._aTimer); this._aTimer = setTimeout(() => this.checkAudio(true), 400); };
+    window.addEventListener('wheel', tryAudio, { capture: true, passive: true });
+    window.addEventListener('touchend', tryAudio, { capture: true, passive: true });
+    audio.onState = () => this.checkAudio();
 
     const btn = document.getElementById('sound-toggle');
     const vol = document.getElementById('sound-volume');
@@ -53,11 +65,15 @@ export class Overlay {
   showHint() { this.bottom.classList.remove('is-hidden', 'is-quiet'); }
   hintTop() { return this.bottom.querySelector('.hint').getBoundingClientRect().top; }
 
-  showSoundTip(on) {
-    if (on === this._tip) return;
-    this._tip = on;
-    this.sound.classList.toggle('has-tip', on);
+  /** show "소리 켜고 시작하기" only while sound is blocked (not when the visitor muted it on purpose) */
+  checkAudio(mayShow = false) {
+    if (!this.audio.ctx) return;
+    const hide = this.audio.ctx.state === 'running' || this.audio.muted;
+    if (!hide && !mayShow && this.soundStart.hidden) return;   // only a wheel / swipe that stayed silent shows it
+    if (!hide) this.soundStart.style.setProperty('--prompt-bottom', `${this.top.getBoundingClientRect().bottom}px`);
+    this.soundStart.hidden = hide;
   }
+  showSoundTip() {}
 
   // ---- 06 ending ----
   onReplay(cb) { this.replayCb = cb; }
@@ -76,7 +92,7 @@ export class Overlay {
     const e = this.ending;
     e.style.removeProperty('--answer-size');
     e.classList.toggle('is-wrapped', wrapped);
-    const base = parseFloat(getComputedStyle(this.answerKo).fontSize);
+    const base = parseFloat(getComputedStyle(this.answerKo.querySelector('.ans-l2')).fontSize);   // the main line sets the size
     const m = { base, wrapped, w: Math.max(this.answerKo.scrollWidth, e.querySelector('.answer-en').scrollWidth), h: e.offsetHeight };
     e.classList.toggle('is-wrapped', !!this.answerBox?.wrapped);
     return m;

@@ -259,7 +259,7 @@ for (const [tag, vp, touch, at] of runs) {
   let shotStart = false, shotForm = false, revealSeen = [];
   for (let i = 0; i < 40; i++) {
     const st = await S(page);
-    revealSeen.push(st.answerFx.reveal);
+    revealSeen.push(st.answerFx.reveal); (globalThis.__r1 ||= []).push([st.answerFx.reveal1, st.answerFx.reveal]);
     if (!shotStart && st.answerFx.active && st.answerFx.reveal === 0 && st.clock > st.timeline.light + 0.2) { shotStart = true; await page.screenshot({ path: `${OUT}/${tag}_06_particles_start.png` }); }
     else if (!shotForm && st.answerFx.reveal > 0.2 && st.answerFx.reveal < 0.95) { shotForm = true; await page.screenshot({ path: `${OUT}/${tag}_06_particles_forming.png` }); }
     if (st.ending.ko && i > 8) break;
@@ -286,14 +286,19 @@ for (const [tag, vp, touch, at] of runs) {
 
   // typography: the family's voice
   await sleep(1500);
-  const ans = await page.evaluate(() => { const k = document.querySelector('.answer-ko'), e = document.querySelector('.answer-en'), q = document.querySelector('[data-prompt="question"]'); const g = (el) => getComputedStyle(el);
-    return { ko: k.textContent, en: e.textContent, koSize: parseFloat(g(k).fontSize), enSize: parseFloat(g(e).fontSize), koW: g(k).fontWeight, enW: g(e).fontWeight, koC: g(k).color, enC: g(e).color, koOp: +g(k).opacity, enOp: +g(e).opacity, cap: parseFloat(g(q).fontSize), qOp: +g(q).opacity, shadow: g(k).textShadow }; });
+  const ans = await page.evaluate(() => { const k = document.querySelector('.answer-ko'), l1 = k.querySelector('.ans-l1'), l2 = k.querySelector('.ans-l2'), e = document.querySelector('.answer-en'), q = document.querySelector('[data-prompt="question"]'); const g = (el) => getComputedStyle(el);
+    const r1 = l1.getBoundingClientRect(), r2 = l2.getBoundingClientRect();
+    return { ko: k.textContent, en: e.textContent, koSize: parseFloat(g(l2).fontSize), l1Size: parseFloat(g(l1).fontSize), enSize: parseFloat(g(e).fontSize), koW: g(l2).fontWeight, l1W: g(l1).fontWeight, enW: g(e).fontWeight, koC: g(l2).color, l1C: g(l1).color, enC: g(e).color, koOp: +g(k).opacity, enOp: +g(e).opacity, cap: parseFloat(g(q).fontSize), qOp: +g(q).opacity, shadow: g(l2).textShadow, twoLines: r2.top >= r1.bottom - 2 }; });
   const tl8 = s8.timeline;
   check(T('06_answer_text'), ans.ko === '그럼, 다시 외우면 되지.' && ans.en === "Then I'll learn it again.", `"${ans.ko}" / "${ans.en}"`);
   const ratio = ans.koSize / ans.cap;
-  const crisp = await page.evaluate(() => ({ filter: getComputedStyle(document.querySelector('.answer-ko')).filter, fx: +getComputedStyle(document.querySelector('.answer-fx')).opacity, n: document.querySelectorAll('.answer-fx').length }));
-  check(T('06_answer_distinct'), ratio >= 1.18 && ratio <= 1.45 && ans.koSize >= 21 && ans.koW === '500' && ans.koC === 'rgb(244, 189, 169)' && ans.shadow === 'none' && ans.enSize / ans.koSize >= 0.4 && ans.enSize / ans.koSize <= 0.55 && +ans.enW <= 400 && ans.koOp > 0.98 && ans.enOp > 0.98 && ans.qOp < 0.05,
-    `Korean ${ans.koSize}px (${ratio.toFixed(2)}× the ${ans.cap}px captions) Medium ${ans.koC} (rose-champagne, no glow); English ${ans.enSize}px weight ${ans.enW} ${ans.enC}; question gone`);
+  const crisp = await page.evaluate(() => ({ filter: [...document.querySelectorAll('.ans-l1, .ans-l2')].map((x) => getComputedStyle(x).filter).every((f) => f === 'none') ? 'none' : 'blur', fx: +getComputedStyle(document.querySelector('.answer-fx')).opacity, n: document.querySelectorAll('.answer-fx').length }));
+  const sizeOk = touch ? ans.koSize >= 28 && ans.koSize <= 40 : ans.koSize >= 48 && ans.koSize <= 64;
+  const order = (globalThis.__r1 || []).some(([a, b]) => a >= 0.95 && b < 0.6);
+  globalThis.__r1 = [];
+  check(T('06_two_lines_in_order'), ans.twoLines && order, '"그럼," on its own line, formed first (complete while the main line was still forming); "다시 외우면 되지." below');
+  check(T('06_answer_distinct'), sizeOk && ratio >= 1.7 && ans.l1Size < ans.koSize * 0.7 && ['500', '600'].includes(ans.koW) && ans.koC === 'rgb(244, 189, 169)' && ans.l1C === 'rgb(244, 189, 169)' && ans.enSize / ans.koSize <= 0.4 && +ans.enW <= 400 && ans.koOp > 0.98 && ans.enOp > 0.98 && ans.qOp < 0.05,
+    `main line ${ans.koSize}px weight ${ans.koW} (${ratio.toFixed(2)}× the ${ans.cap}px captions), "그럼," ${ans.l1Size}px, apricot ${ans.koC}; English ${ans.enSize}px weight ${ans.enW} ${ans.enC}; question gone`);
   check(T('06_text_crisp'), crisp.filter === 'none' && crisp.fx === 0 && crisp.n === 1, `final sentence is sharp HTML text (filter ${crisp.filter}), particle layer cleared, one particle layer`);
   check(T('06_timing'), Math.abs(tl8.answerEn - tl8.koDone - 0.4) < 0.01 && Math.abs(tl8.replay - tl8.koDone - 1.6) < 0.01 && tl8.koDone - tl8.answerAt <= 1.6, `15th note → sentence complete ${(tl8.koDone - tl8.answerAt).toFixed(2)} s; English +${(tl8.answerEn - tl8.koDone).toFixed(2)} s; "다시 감기" +${(tl8.replay - tl8.koDone).toFixed(2)} s`);
   await waitFor(page, () => window.__storge.state.ending.replay);
@@ -331,8 +336,8 @@ for (const [tag, vp, touch, at] of runs) {
   const vp2 = touch ? { ...vp, width: 844, height: 390 } : { ...vp, width: 1280, height: 720 };
   await page.setViewport(vp2); await sleep(2500);
   const ak2 = await rect(page, '.answer-ko'), ae2 = await rect(page, '.answer-en'), sb2 = (await SC(page)).box, br2 = await boxRect(page), rb2 = await rect(page, '#replay'), ch2 = await chainBox(page);
-  const ks2 = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.answer-ko')).fontSize));
-  check(T('resize_ok'), ak2.x0 >= 8 && ak2.x1 <= vp2.width - 8 && ae2.y1 <= vp2.height && sb2.x0 >= 0 && sb2.x1 <= vp2.width && !overlaps(ak2, sb2) && !overlaps(ae2, sb2) && !overlaps(ak2, br2) && !overlaps(rb2, sb2) && !hitsLine(ak2, ch2.pts) && ks2 >= 21,
+  const ks2 = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.ans-l2')).fontSize));
+  check(T('resize_ok'), ak2.x0 >= 8 && ak2.x1 <= vp2.width - 8 && ae2.y1 <= vp2.height && sb2.x0 >= 0 && sb2.x1 <= vp2.width && !overlaps(ak2, sb2) && !overlaps(ae2, sb2) && !overlaps(ak2, br2) && !overlaps(rb2, sb2) && !hitsLine(ak2, ch2.pts) && ks2 >= 28,
     `${vp2.width}×${vp2.height}: answer ${R({ ...ak2, y1: ae2.y1 })} at ${ks2}px, score ${R(sb2)}`);
   await page.screenshot({ path: `${OUT}/${tag}_06_resized.png` });
   await page.setViewport(vp); await sleep(2500);
@@ -390,10 +395,10 @@ if (!ONLY || ONLY === 'landscape') {
   await waitFor(page, () => window.__storge.state.ending.replay);
   await sleep(2600);
   const ak = await rect(page, '.answer-ko'), ae = await rect(page, '.answer-en'), rb = await rect(page, '#replay'), ch = await chainBox(page), br = await boxRect(page), sb = (await SC(page)).box;
-  const lks = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.answer-ko')).fontSize));
+  const lks = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.ans-l2')).fontSize));
   const lst = await S(page);
   check('landscape_reduced_motion', lst.answerFx.reduced && lst.answerFx.count === 0 && lst.ending.ko && lst.ending.en, 'with "reduce motion": no particles, the sentence simply fades in; English follows');
-  check('landscape_06_layout', lks >= 21 && !hitsLine(ak, ch.pts) && !hitsLine(ae, ch.pts) && !overlaps(ak, br) && !overlaps(ae, rb) && !overlaps(ae, sb) && !overlaps(rb, sb) && ak.x0 >= 8 && ak.x1 <= 836 && ak.y0 >= 0 && ae.y1 <= 390,
+  check('landscape_06_layout', lks >= 24 && !hitsLine(ak, ch.pts) && !hitsLine(ae, ch.pts) && !overlaps(ak, br) && !overlaps(ae, rb) && !overlaps(ae, sb) && !overlaps(rb, sb) && ak.x0 >= 8 && ak.x1 <= 836 && ak.y0 >= 0 && ae.y1 <= 390,
     `answer ${R({ ...ak, y1: ae.y1 })} at ${lks}px, score ${R(sb)}, button ${R(rb)} in 844×390`);
   await page.screenshot({ path: `${OUT}/landscape_06.png` });
   check('landscape_console_clean', errors.length === 0, errors.slice(0, 3).join(' | ') || '0 errors');
