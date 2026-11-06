@@ -155,7 +155,8 @@ for (let i = 0; i < 60; i++) {
 fs.writeFileSync(`${OUT}/frames.json`, JSON.stringify(frames, null, 1));
 console.log(frames.map((f) => `${f.f.split('/').pop()} ${f.clock.toFixed(2)} ${f.story} ${f.ko}`).join('\n'));
 console.log('errors', errors);
-console.log(await page.evaluate(() => { const e = document.querySelector('.ending'); const r = e.getBoundingClientRect(); return JSON.stringify({ style: e.getAttribute('style'), r: [r.left, r.right, r.top, r.bottom].map(Math.round), memo: e.querySelector('.memo').offsetWidth }); }));
-await page.evaluate(() => window.__storge.scenes.current.placeAnswer());
-console.log('re-placed', await page.evaluate(() => document.querySelector('.ending').getAttribute('style')));
+console.log(await page.evaluate(() => { const e = document.querySelector('.ending'); const r = e.querySelector('.note-card').getBoundingClientRect(); return JSON.stringify({ cardCenter: [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)], viewport: [innerWidth, innerHeight], size: [Math.round(r.width), Math.round(r.height)], cards: document.querySelectorAll('.note-card').length }); }));
+const before = await S(page); await wind(page, mobile, 2, at); await new Promise((r) => setTimeout(r, 1500)); const after = await S(page);
+console.log('after card: winding still plays', before.changedCount, '->', after.changedCount, 'score current', (await SC(page)).cState.findIndex((x) => x === 'current'), after.changedPlayed.at(-1));
+await page.screenshot({ path: `${OUT}/final.png` });
 await browser.close();

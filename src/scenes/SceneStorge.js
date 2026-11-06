@@ -106,59 +106,9 @@ export function createSceneStorge(ctx) {
   /** where the answer goes: the largest size (up to the design size) at which both lines fit in open
    *  space — clear of the line and its glow, the box, the title, the score, the button and the sound
    *  control — then, among those spots, the one nearest the middle of the screen. */
-  function placeAnswer() {
-    const W = window.innerWidth, H = window.innerHeight, toS = drag.toScreen, C = 4;
-    const cols = Math.ceil(W / C), rows = Math.ceil(H / C);
-    const occ = new Uint8Array(cols * rows);
-    const mark = (x0, y0, x1, y1) => {
-      const c0 = Math.max(0, Math.floor(x0 / C)), c1 = Math.min(cols - 1, Math.floor(x1 / C));
-      const r0 = Math.max(0, Math.floor(y0 / C)), r1 = Math.min(rows - 1, Math.floor(y1 / C));
-      for (let r = r0; r <= r1; r++) occ.fill(1, r * cols + c0, r * cols + c1 + 1);
-    };
-    const markRect = (r, m) => mark(r.left - m, r.top - m, r.right + m, r.bottom + m);
-    const glow = 16;
-    for (const p of fragments.pieces) for (const q of p.worldPoints(40)) { const v = toS(q); mark(v.x - glow, v.y - glow, v.x + glow, v.y + glow); }
-    const b = musicBox.box; let bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
-    for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
-      const v = toS(new THREE.Vector3(x, y, z)); bx0 = Math.min(bx0, v.x); bx1 = Math.max(bx1, v.x); by0 = Math.min(by0, v.y); by1 = Math.max(by1, v.y);
-    }
-    mark(bx0 - 12, by0 - 12, bx1 + 12, by1 + 12);
-    for (const sel of ['.title-row', '.subtitle']) markRect(overlay.top.querySelector(sel).getBoundingClientRect(), 10);
-    markRect(score.box, 10);
-    const rb = overlay.replayBtn.getBoundingClientRect(); mark(rb.left - 10, rb.top - 16, rb.right + 10, rb.bottom + 10);
-    markRect(overlay.sound.getBoundingClientRect(), 10);
-    // prefix sums: is a rectangle free?
-    const P = new Int32Array((cols + 1) * (rows + 1));
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) P[(r + 1) * (cols + 1) + c + 1] = occ[r * cols + c] + P[r * (cols + 1) + c + 1] + P[(r + 1) * (cols + 1) + c] - P[r * (cols + 1) + c];
-    const busy = (c0, r0, c1, r1) => P[(r1 + 1) * (cols + 1) + c1 + 1] - P[r0 * (cols + 1) + c1 + 1] - P[(r1 + 1) * (cols + 1) + c0] + P[r0 * (cols + 1) + c0];
-    const edge = 10, cx = W / 2, cy = H * 0.45;
-    const findSpot = (w, h) => {
-      const cw = Math.ceil(w / C), ch = Math.ceil(h / C);
-      let best = null;
-      for (let r0 = Math.ceil(edge / C); r0 + ch < rows - Math.ceil(edge / C); r0++) {
-        for (let c0 = Math.ceil(edge / C); c0 + cw < cols - Math.ceil(edge / C); c0++) {
-          if (busy(c0, r0, c0 + cw - 1, r0 + ch - 1)) continue;
-          const x = (c0 + cw / 2) * C, y = (r0 + ch / 2) * C, d = (x - cx) ** 2 + ((y - cy) * 1.4) ** 2;
-          if (!best || d < best.d) best = { x, y, d };
-        }
-      }
-      return best;
-    };
-    // the answer keeps its size: first look for room at full size (one line, then wrapped after "그럼,"),
-    // and only then step the size down — never below 1.2× the caption size (and never below 21 px)
-    // the memo card at full size if there is room, otherwise a little smaller (never covering the work)
-    const one = overlay.answerMetrics(false), two = one;
-    const minSize = 78;   // the memo card may shrink a little on small screens, never below 78 %
-    // below minSize only as a last resort (very short screens): smaller text is better than covering the work
-    for (let size = 100; size >= 60; size -= 2) {
-      for (const m of [one]) {
-        const k = size / m.base, spot = findSpot(m.w * k + 8, m.h * k + 6);
-        if (spot) { overlay.setAnswer({ x: spot.x, y: spot.y, size }); return; }
-      }
-    }
-    // never expected: smallest allowed size, wrapped, in the middle of the space above the score
-    overlay.setAnswer({ x: W / 2, y: Math.min(H * 0.45, score.box.top - two.h * minSize / two.base), size: minSize, base: two.base, wrapped: true });
-  }
+  /** the note card sits in the exact centre of the viewport (CSS); it may cover the box and line */
+  function placeAnswer() {}
+
 
   /** "다시 감기": everything back to the very start, nothing duplicated */
   function reset() {
