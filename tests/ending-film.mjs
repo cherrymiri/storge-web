@@ -139,8 +139,16 @@ const vp = mobile ? { width: W, height: Hh, deviceScaleFactor: 2, isMobile: true
 const { page, errors } = await open(vp, 4);
 const at = mobile ? (W > Hh ? [600, 330, 60] : [200, 640, 320]) : null;
 { const r = await page.evaluate(() => { const e = document.getElementById('start-btn').getBoundingClientRect(); return [e.left + e.width / 2, e.top + e.height / 2]; }); if (mobile) await page.touchscreen.tap(...r); else await page.mouse.click(...r); await page.waitForFunction(() => window.__storge.state.started); }
+const fs0 = await page.evaluate(() => ({ fs: !!document.fullscreenElement, btn: !document.getElementById('fs-btn').hidden, audio: window.__storge.state.audioState }));
+console.log('after start:', JSON.stringify(fs0));
 await windToBreak(page, mobile, at);
+console.log('broken, ghost:', (await S(page)).ghostVisible);
+await waitFor(page, () => window.__storge.state.story === 'REPAIRING');
+console.log('repairing, ghost:', (await S(page)).ghostVisible);
 await repairAll(page, mobile);
+await new Promise((r) => setTimeout(r, 2500));
+console.log('repaired, ghost:', (await S(page)).ghostVisible, (await S(page)).ghostOpacity);
+await page.screenshot({ path: `${OUT}/repaired_ghost.png` });
 await waitFor(page, () => window.__storge.state.againShown);
 await playChanged(page, mobile, 13, at);
 await page.evaluate(() => window.__storge.setSpeed(1));
@@ -159,4 +167,14 @@ console.log(await page.evaluate(() => { const e = document.querySelector('.endin
 const before = await S(page); await wind(page, mobile, 2, at); await new Promise((r) => setTimeout(r, 1500)); const after = await S(page);
 console.log('after card: winding still plays', before.changedCount, '->', after.changedCount, 'score current', (await SC(page)).cState.findIndex((x) => x === 'current'), after.changedPlayed.at(-1));
 await page.screenshot({ path: `${OUT}/final.png` });
+// ESC-like exit and re-enter via the corner button keep the state
+const st0 = (await S(page)).story;
+await page.evaluate(() => document.exitFullscreen?.().catch(() => {})); await new Promise((r) => setTimeout(r, 800));
+console.log('after exit:', JSON.stringify(await page.evaluate(() => ({ fs: !!document.fullscreenElement, pressed: document.getElementById('fs-btn').getAttribute('aria-pressed') }))), 'story', st0, '->', (await S(page)).story);
+await waitFor(page, () => window.__storge.state.ending.replay);
+const rb = await page.evaluate(() => { const e = document.getElementById('replay').getBoundingClientRect(); return { t: document.getElementById('replay').textContent, x: e.left + e.width / 2, y: e.top + e.height / 2 }; });
+if (mobile) await page.touchscreen.tap(rb.x, rb.y); else await page.mouse.click(rb.x, rb.y);
+await new Promise((r) => setTimeout(r, 1500));
+const r = await S(page);
+console.log('replay text:', rb.t, '| after replay: story', r.story, 'ghost', r.ghostVisible, 'audio', r.audioState, 'start shown', await page.evaluate(() => !document.getElementById('start').hidden), 'objects', r.sceneMeshes);
 await browser.close();

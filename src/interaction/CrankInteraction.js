@@ -224,7 +224,7 @@ export class CrankInteraction {
     }
   }
 
-  /** "다시 감기": handle back at rest, nothing wound, idle nudge again */
+  /** "다시 체험하기": handle back at rest, nothing wound, idle nudge again */
   reset() {
     this.angle = 0; this.wound = 0; this.pending = 0; this.debt = 0; this.hold = 0;
     this.touchId = null; this.started = false; this.lastInput = null; this.nudgeT = 0;

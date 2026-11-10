@@ -198,7 +198,7 @@ export class MelodyLine {
     if (this.group.visible && this.curve) this.tipCap.position.copy(this.pointAt(this.progress));
   }
 
-  /** "다시 감기": back to an empty, relaxed thread */
+  /** "다시 체험하기": back to an empty, relaxed thread */
   reset() {
     this.setStrain({ taut: 0, tremor: 0, hi: 0, phase: 0 });
     this.pulse = 0;

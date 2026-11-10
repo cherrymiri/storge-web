@@ -308,7 +308,7 @@ export class MelodyFragments {
 
   successPulse(time) { this.pulseT0 = time; }
 
-  /** "다시 감기": remove every piece, crumb, flash and reflection — nothing is left behind or doubled */
+  /** "다시 체험하기": remove every piece, crumb, flash and reflection — nothing is left behind or doubled */
   clear() {
     for (const p of this.pieces) { this.scene.remove(p.group); p.dispose(); }
     for (const m of this.mirrors) { this.mirrorRoot.remove(m.group); m.mesh.material.dispose(); }

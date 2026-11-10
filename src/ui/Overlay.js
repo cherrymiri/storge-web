@@ -27,6 +27,14 @@ export class Overlay {
     this.startNote = document.getElementById('start-note');
     this.started = false;
     this.startBtn.addEventListener('click', () => this.pressStart());
+    // full screen (exhibition): standard Fullscreen API, webkit prefix for Safari; hidden where unsupported
+    const root = document.documentElement;
+    this.fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled) && !!(root.requestFullscreen || root.webkitRequestFullscreen);
+    this.fsBtn = document.getElementById('fs-btn');
+    this.fsBtn.hidden = !this.fsSupported;
+    this.fsBtn.addEventListener('click', () => (this.isFullscreen() ? this.exitFullscreen() : this.enterFullscreen()));
+    for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => this.syncFullscreen());
+    for (const ev of ['fullscreenerror', 'webkitfullscreenerror']) document.addEventListener(ev, () => { this.fsError = true; this.syncFullscreen(); });
     // load the note card's handwriting now, so the card never waits for it
     document.fonts?.load("400 40px 'Card Treegarden'", "from 가족 to 사랑하는 너에게 그럼, 다시 외우면 되지. Then I'll learn it again.").catch(() => {});
 
@@ -66,10 +74,31 @@ export class Overlay {
 
   onStart(cb) { this.startCb = cb; }
 
+  isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  /** must be called inside a click / tap; a refusal never stops the work from starting */
+  enterFullscreen() {
+    if (!this.fsSupported || this.isFullscreen()) return;
+    const root = document.documentElement;
+    try {
+      const r = root.requestFullscreen ? root.requestFullscreen({ navigationUI: 'hide' }) : root.webkitRequestFullscreen();
+      r?.catch?.(() => { this.fsError = true; this.syncFullscreen(); });
+    } catch { this.fsError = true; }
+  }
+  exitFullscreen() {
+    try { const r = document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen?.(); r?.catch?.(() => {}); } catch { /* already out */ }
+  }
+  /** the icon always shows the real state (never claims full screen when it is not) */
+  syncFullscreen() {
+    const on = this.isFullscreen();
+    this.fsBtn.setAttribute('aria-pressed', String(on));
+    this.fsBtn.setAttribute('aria-label', on ? '전체화면 끝내기' : '전체화면');
+  }
+
   async pressStart() {
     if (this.started || this._starting) return;          // repeated presses do nothing extra
     this._starting = true;
-    this.audio.unlock(true);                             // inside the click: allowed to start sound
+    this.audio.unlock(true);                             // inside the click: allowed to start sound (first)
+    this.enterFullscreen();                              // same click, before any await; failure is harmless
     this.startBtn.disabled = true;
     const ok = await this.audio.whenRunning(2000);
     this._starting = false;
@@ -140,7 +169,7 @@ export class Overlay {
     return { ko: this.ending.classList.contains('show-ko'), en: this.ending.classList.contains('show-en'), replay: this.replayBtn.classList.contains('is-visible') };
   }
 
-  /** "다시 감기": the first screen again */
+  /** "다시 체험하기": the first screen again */
   reset() {
     this.ending.classList.add('instant'); this.replayBtn.classList.add('instant');
     this.ending.classList.remove('show-ko', 'show-en', 'is-wrapped');

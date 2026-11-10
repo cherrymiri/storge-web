@@ -94,6 +94,8 @@ export const CONFIG = {
   },
 
   // 05–06 (seconds of story time; all start once the last piece has finished turning angular)
+  // 04–06: the faint trace of the first, smooth melody behind the angular one
+  ghost: { color: '#cbb9a2', opacity: 0.16, radiusScale: 0.85, fadeSec: 0.7 },
   ending: {
     questionAfter: 0.4,       // repaired (last piece angular) → the question (replaces the repair prompt)
     againAfter: 0.3,          // question → "태엽을 다시 감아보세요."; winding works from here (the question stays)

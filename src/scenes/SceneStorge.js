@@ -7,6 +7,7 @@ import { FragmentDrag } from '../interaction/FragmentDrag.js';
 import { CrankMelody } from '../audio/CrankMelody.js';
 import { storgeThemeChanged } from '../audio/melodies/storgeThemeChanged.js';
 import { Score } from '../ui/Score.js';
+import { MelodyGhost } from '../objects/MelodyGhost.js';
 
 const TAU = Math.PI * 2;
 
@@ -19,7 +20,7 @@ export const STATES = {
   REPAIRING: 'REPAIRING',             // 04 drag pieces back                   -> drag only
   REPAIRED: 'REPAIRED',               // 04 complete, new angular melody kept  -> nothing (look at it)
   CHANGED: 'CHANGED',                 // 05 question, then "태엽을 다시 감아보세요." -> wind = play the changed melody
-  ANSWERED: 'ANSWERED',               // 06 after the phrase was played: the answer; stays until "다시 감기" -> replay button
+  ANSWERED: 'ANSWERED',               // 06 after the phrase was played: the answer; stays until "다시 체험하기" -> replay button
 };
 const CAN_WIND = new Set([STATES.INTRO, STATES.LOVE_EXPANDING, STATES.TENSION]);
 
@@ -32,7 +33,7 @@ const CAN_WIND = new Set([STATES.INTRO, STATES.LOVE_EXPANDING, STATES.TENSION]);
  * 05 the changed me · "멜로디가 바뀐 나, 가족들은 날 기억할까요?", then "태엽을 다시 감아보세요.":
  *    winding plays the changed phrase note by note (no autoplay); the score compares it with the old one
  * 06 love's answer · only after the whole phrase was played: a pause, then the family's answer.
- *    The line stays angular, the changed phrase stays on the score. "다시 감기" starts over without reloading.
+ *    The line stays angular, the changed phrase stays on the score. "다시 체험하기" starts over without reloading.
  */
 export function createSceneStorge(ctx) {
   const { stage, musicBox, floor, bus, audio, overlay, rig } = ctx;
@@ -54,6 +55,7 @@ export function createSceneStorge(ctx) {
   let tl = {};                 // 04→06 timeline (story clock), set when the repair is complete
   let noteFlare = 0, spotIn = 0, spotPos = 0;
   let tones = [];              // 04 repair tones waiting for their piece to land
+  const ghost = new MelodyGhost(stage.scene);
   let started = false;          // "체험 시작" pressed and sound running: winding allowed
   let resets = 0;
   const history = [{ state, t: 0 }];
@@ -110,9 +112,10 @@ export function createSceneStorge(ctx) {
   function placeAnswer() {}
 
 
-  /** "다시 감기": everything back to the very start, nothing duplicated */
+  /** "다시 체험하기": everything back to the very start, nothing duplicated */
   function reset() {
     changed.reset();
+    ghost.clear();
     tones = [];
     audio.resetForReplay();
     fragments.clear();
@@ -173,7 +176,7 @@ export function createSceneStorge(ctx) {
     }
     if (state === STATES.CHANGED && clock >= tl.answer) {
       setState(STATES.ANSWERED);                         // the crank stays enabled
-      overlay.hideHint();                                // its place is taken by "다시 감기" shortly
+      overlay.hideHint();                                // its place is taken by "다시 체험하기" shortly
       placeAnswer();
     }
     if (clock >= tl.koStart && !tl.koShown) { tl.koShown = true; overlay.showEnding('ko'); }
@@ -337,11 +340,13 @@ export function createSceneStorge(ctx) {
           setState(STATES.REPAIRED);
           fragments.setRepairing(false);
           fragments.successPulse(clock);
+          ghost.show(melody.curve, melody.group, clock);   // the first, smooth melody stays as a faint trace
           const e = CONFIG.ending, t0 = clock;
           tl = { question: t0 + e.questionAfter };
           tl.again = tl.question + e.againAfter;
         }
         if (tl.question !== undefined) runEnding(dt);
+        ghost.update(clock);
       }
     },
 
@@ -362,7 +367,7 @@ export function createSceneStorge(ctx) {
         pieces: fragments.pieces.length, connected: fragments.pieces.filter((p) => p.connected).length, nextIndex: fragments.nextIndex,
         sprinkles: fragments.sprinkles.length, melodyVisible: melody.group.visible, clock,
         changedBeat: +changed.beat.toFixed(3), changedCount: changed.count, changedPass: changed.pass, changedPlayed: [...changed.played], changedNotes: audio.changedNotes || 0,
-        started, koShown: !!tl.koShown, againShown: !!tl.againShown, repairTones: [...(audio.repairTones || [])], jointFlashes: fragments.jointFlashes || 0, hintPhase: overlay.hint.dataset.phase || '',
+        started, koShown: !!tl.koShown, ghostOpacity: +ghost.opacity.toFixed(3), ghostVisible: ghost.visible, againShown: !!tl.againShown, repairTones: [...(audio.repairTones || [])], jointFlashes: fragments.jointFlashes || 0, hintPhase: overlay.hint.dataset.phase || '',
         spot: +melody.uniforms.uSpot.value.toFixed(3), spotK: +melody.uniforms.uSpotK.value.toFixed(3), glow: +melody.uniforms.uGlow.value.toFixed(3),
         ending: overlay.endingState(), resets, timeline: tl,
         sceneMeshes: stage.scene.children.length, mirrorChildren: floor.mirrorRoot.children.length,

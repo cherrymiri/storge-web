@@ -170,7 +170,20 @@ html, body {
 }
 .ending.instant, .ending.instant * { transition: none !important; }
 
-/* "다시 감기" */
+/* full screen toggle: a small icon in the top-right corner, same line style as the sound button */
+.fs-btn {
+  position: absolute; z-index: 30; top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(14px + env(safe-area-inset-right, 0px));
+  width: 40px; height: 40px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  border-radius: 50%; border: 1px solid rgba(244, 232, 214, 0.22); background: rgba(10, 8, 6, 0.3); color: rgba(244, 232, 214, 0.72);
+  transition: border-color 0.3s ease, color 0.3s ease, opacity 0.3s ease; pointer-events: auto;
+}
+.fs-btn:hover, .fs-btn:focus-visible { border-color: rgba(244, 232, 214, 0.55); color: #f6e8d2; outline: none; }
+.fs-btn[hidden] { display: none; }
+.fs-btn svg { width: 18px; height: 18px; }
+.fs-btn .fs-exit, .fs-btn[aria-pressed="true"] .fs-enter { display: none; }
+.fs-btn[aria-pressed="true"] .fs-exit { display: block; }
+
+/* "다시 체험하기" */
 .replay {
   z-index: 30;
   position: absolute; left: 50%; bottom: calc(clamp(22px, 5vh, 52px) + var(--safe-bottom)); transform: translate(-50%, 6px);
@@ -180,7 +193,7 @@ html, body {
 }
 .replay.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
 .replay:hover { border-color: var(--ivory-dim); }
-/* on "다시 감기" the ending disappears at once (no long fade over the first screen) */
+/* on "다시 체험하기" the ending disappears at once (no long fade over the first screen) */
 .instant, .instant .answer-ko, .instant .answer-en { transition: none !important; }
 .replay:focus-visible { outline: 1px solid var(--ivory); outline-offset: 3px; }
 

@@ -171,7 +171,7 @@ export class AudioEngine {
     step.chord?.forEach((n, i) => this.pluck(noteToFreq(n, tr), when + 0.02 + i * 0.018, v * 0.4));
   }
 
-  /** "다시 감기": back to the start — the 01 theme from its first note, reverb restored */
+  /** "다시 체험하기": back to the start — the 01 theme from its first note, reverb restored */
   resetForReplay() {
     clearTimeout(this._wetTimer);
     this.stepIndex = 0;

@@ -59,7 +59,13 @@
         <span class="hint-text hint-again">태엽을 다시 감아보세요.</span>
       </p>
     </footer>
-    <button class="replay" id="replay" type="button" tabindex="-1">다시 감기</button>
+    <button class="replay" id="replay" type="button" tabindex="-1">다시 체험하기</button>
+
+    <!-- exhibition: full screen on / off (only shown where the browser supports it) -->
+    <button class="fs-btn" id="fs-btn" type="button" aria-label="전체화면" aria-pressed="false" hidden>
+      <svg class="fs-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="fs-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
 
     <div class="sound" id="sound">
             <button class="sound-btn" id="sound-toggle" type="button" aria-label="소리 끄기" aria-pressed="false">
