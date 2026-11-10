@@ -34,6 +34,7 @@ export class Overlay {
     this.fsBtn.hidden = !this.fsSupported;
     this.fsBtn.addEventListener('click', () => (this.isFullscreen() ? this.exitFullscreen() : this.enterFullscreen()));
     for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => this.syncFullscreen());
+    window.addEventListener('resize', () => this.syncFullscreen());   // some browsers report the change late; a resize always follows
     for (const ev of ['fullscreenerror', 'webkitfullscreenerror']) document.addEventListener(ev, () => { this.fsError = true; this.syncFullscreen(); });
     // load the note card's handwriting now, so the card never waits for it
     document.fonts?.load("400 40px 'Card Treegarden'", "from 가족 to 사랑하는 너에게 그럼, 다시 외우면 되지. Then I'll learn it again.").catch(() => {});
