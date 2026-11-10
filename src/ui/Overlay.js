@@ -28,8 +28,7 @@ export class Overlay {
     this.started = false;
     this.startBtn.addEventListener('click', () => this.pressStart());
     // load the note card's handwriting now, so the card never waits for it
-    document.fonts?.load("400 40px 'Card Gaegu'", 'from 가족 to 사랑하는 너에게 그럼, 다시 외우면 되지.').catch(() => {});
-    document.fonts?.load("400 20px 'Card Caveat'", "from to Then I'll learn it again.").catch(() => {});
+    document.fonts?.load("400 40px 'Card Treegarden'", "from 가족 to 사랑하는 너에게 그럼, 다시 외우면 되지. Then I'll learn it again.").catch(() => {});
 
     const btn = document.getElementById('sound-toggle');
     const vol = document.getElementById('sound-volume');
