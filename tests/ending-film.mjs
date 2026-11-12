@@ -139,8 +139,10 @@ const vp = mobile ? { width: W, height: Hh, deviceScaleFactor: 2, isMobile: true
 const { page, errors } = await open(vp, 4);
 const at = mobile ? (W > Hh ? [600, 330, 60] : [200, 640, 320]) : null;
 { const r = await page.evaluate(() => { const e = document.getElementById('start-btn').getBoundingClientRect(); return [e.left + e.width / 2, e.top + e.height / 2]; }); if (mobile) await page.touchscreen.tap(...r); else await page.mouse.click(...r); await page.waitForFunction(() => window.__storge.state.started); }
-const fs0 = await page.evaluate(() => ({ fs: !!document.fullscreenElement, btn: !document.getElementById('fs-btn').hidden, audio: window.__storge.state.audioState }));
-console.log('after start:', JSON.stringify(fs0));
+await new Promise((r) => setTimeout(r, 900));
+const fs0 = await page.evaluate(() => ({ fs: !!document.fullscreenElement, opening: getComputedStyle(document.getElementById('opening')).visibility, audio: window.__storge.state.audioState }));
+await wind(page, mobile, mobile ? 1 : 3, at); await new Promise((r) => setTimeout(r, 900));
+console.log('after start:', JSON.stringify(fs0), 'first wind -> steps', (await S(page)).notes);
 await windToBreak(page, mobile, at);
 console.log('broken, ghost:', (await S(page)).ghostVisible);
 await waitFor(page, () => window.__storge.state.story === 'REPAIRING');
@@ -176,5 +178,13 @@ const rb = await page.evaluate(() => { const e = document.getElementById('replay
 if (mobile) await page.touchscreen.tap(rb.x, rb.y); else await page.mouse.click(rb.x, rb.y);
 await new Promise((r) => setTimeout(r, 1500));
 const r = await S(page);
-console.log('replay text:', rb.t, '| after replay: story', r.story, 'ghost', r.ghostVisible, 'audio', r.audioState, 'start shown', await page.evaluate(() => !document.getElementById('start').hidden), 'objects', r.sceneMeshes);
+const op = await page.evaluate(() => ({ shown: !document.getElementById('opening').hidden && getComputedStyle(document.getElementById('opening')).visibility === 'visible', text: document.querySelector('.opening-desc').innerText }));
+await wind(page, mobile, 3, at); await new Promise((r) => setTimeout(r, 800));
+const r2 = await S(page);
+console.log('replay text:', rb.t, '| after replay: story', r.story, 'ghost', r.ghostVisible, 'audio', r.audioState, 'opening shown', op.shown, 'objects', r.sceneMeshes, '| wind before pressing start ->', r2.notes, 'steps');
+{ const b = await page.evaluate(() => { const e = document.getElementById('start-btn').getBoundingClientRect(); return [e.left + e.width / 2, e.top + e.height / 2]; }); if (mobile) await page.touchscreen.tap(...b); else await page.mouse.click(...b); }
+await new Promise((r) => setTimeout(r, 1500)); await wind(page, mobile, 4, at); await new Promise((r) => setTimeout(r, 900));
+const r3 = await S(page);
+console.log('second start: started', r3.started, 'audio', r3.audioState, 'steps', r3.notes, 'fullscreen', await page.evaluate(() => !!document.fullscreenElement));
+console.log('opening text exact:', JSON.stringify(op.text.split('\n').filter(Boolean)));
 await browser.close();

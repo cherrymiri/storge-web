@@ -114,6 +114,7 @@ export function createSceneStorge(ctx) {
 
   /** "다시 체험하기": everything back to the very start, nothing duplicated */
   function reset() {
+    started = false;                                    // back to the opening: winding waits for its button again
     changed.reset();
     ghost.clear();
     tones = [];

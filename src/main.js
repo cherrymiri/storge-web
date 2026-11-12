@@ -1,3 +1,4 @@
+import '@fontsource/cormorant-garamond/500.css';   // opening title (shared with the other loves)
 import './ui/styles.css';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';

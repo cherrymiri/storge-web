@@ -9,6 +9,27 @@
   <link rel="preload" href="./models/STORGE_MusicBox.glb" as="fetch" crossorigin />
 </head>
 <body>
+  <!-- opening (shared structure with the other loves of 〈When Love Responds〉); its button turns the sound on,
+       asks for full screen, and starts the work -->
+  <section class="opening" id="opening" aria-labelledby="opening-title">
+    <header class="opening-head">
+      <p class="opening-eyebrow">WHEN LOVE RESPONDS</p>
+      <h1 class="opening-title" id="opening-title">STORGE</h1>
+      <p class="opening-subtitle">가족의 사랑</p>
+      <span class="opening-mark" aria-hidden="true"></span>
+    </header>
+    <div class="opening-desc">
+      <p>가족은 가장 가까운 사이지만 언제나 서로를 이해하는 것은 아닙니다.</p>
+      <p>사랑하는 만큼 서운하고 때로는 미워하기도 합니다.</p>
+      <p>시간이 흐르며 서로의 모습이 달라져도, 우리는 다시 서로를 알아갑니다.</p>
+      <p class="opening-invite">지금 태엽을 감아 달라짐을 받아들이는 사랑을 경험해보세요.</p>
+    </div>
+    <div class="opening-foot">
+      <button type="button" class="opening-start" id="start-btn">체험 시작하기</button>
+      <p class="opening-note" id="start-note" hidden>소리를 켜지 못했어요. 한 번 더 눌러주세요.</p>
+    </div>
+  </section>
+
   <div id="app">
     <canvas id="stage" aria-label="STORGE 오르골 3D 장면"></canvas>
 
@@ -22,10 +43,6 @@
       <p class="prompt" aria-live="polite">
         <span class="prompt-line" data-prompt="intro">태엽을 감아 가족의 사랑을 들려주세요.</span>
         <!-- first screen: one real press turns the sound on (browser rule), then winding is enabled -->
-        <span class="start" id="start">
-          <button type="button" class="start-btn" id="start-btn">체험 시작</button>
-          <span class="start-note" id="start-note" hidden>소리를 켜지 못했어요. 한 번 더 눌러주세요.</span>
-        </span>
         <span class="prompt-line" data-prompt="winding">사랑이 가득 차오르고 있어요.</span>
         <span class="prompt-line" data-prompt="broken">사랑과 미움이 뒤엉켜, 선율이 깨졌어요.</span>
         <span class="prompt-line" data-prompt="repair">깨진 선율을 다시 이어주세요.</span>

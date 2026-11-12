@@ -22,7 +22,7 @@ export class Overlay {
     }
     // "체험 시작": the press itself turns the sound on (a real click / tap, as every browser requires);
     // only when the sound is really running does the work begin
-    this.start = document.getElementById('start');
+    this.start = document.getElementById('opening');      // the opening page holds the start button
     this.startBtn = document.getElementById('start-btn');
     this.startNote = document.getElementById('start-note');
     this.started = false;
@@ -109,7 +109,7 @@ export class Overlay {
     this.startNote.hidden = true;
     this.start.classList.add('is-gone');
     this.startBtn.tabIndex = -1;
-    setTimeout(() => { this.start.hidden = true; }, 500);
+    setTimeout(() => { if (this.started) this.start.hidden = true; }, 700);
     this.showPrompt('intro');
     this.bottom.classList.remove('is-hidden');
     this.startCb?.();
@@ -172,14 +172,19 @@ export class Overlay {
 
   /** "다시 체험하기": the first screen again */
   reset() {
+    // back to the opening; the sound stays on and full screen stays — its button just starts again
+    this.started = false;
+    this.start.hidden = false; this.start.classList.remove('is-gone');
+    this.startBtn.tabIndex = 0; this.startNote.hidden = true;
+    this.bottom.classList.add('is-hidden');
     this.ending.classList.add('instant'); this.replayBtn.classList.add('instant');
     this.ending.classList.remove('show-ko', 'show-en', 'is-wrapped');
     this.answerBox = null;
     this.showReplay(false);
     this.replayBtn.blur();
     requestAnimationFrame(() => requestAnimationFrame(() => { this.ending.classList.remove('instant'); this.replayBtn.classList.remove('instant'); }));
-    this.showPrompt('intro');
-    this.bottom.classList.remove('is-hidden', 'is-quiet');
+    this.showPrompt(null);                               // the caption comes after the opening, as at first
+    this.bottom.classList.remove('is-quiet');
     this.setHintPhase(null);
     this.showSoundTip(false);
   }
