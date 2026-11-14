@@ -11,6 +11,7 @@ const TAU = Math.PI * 2;
  *    shortly after the wheel stops.
  *  - Touch: swipe UP anywhere on the 3D area. Finger travel -> crank rotation; lifting
  *    the finger stops the crank.
+ *  - Mobile: the wind button (pressHold / releaseHold) is the main control; the swipe stays as a fallback.
  *  - Mouse press-and-drag is intentionally NOT used any more.
  *  - Ratchet: progress only grows when the handle passes the furthest point reached so
  *    far. Reverse input lets the handle give back by a small play (backlashDeg) and it
@@ -45,6 +46,9 @@ export class CrankInteraction {
     this.nudgeT = 0;
     this.enabled = true;
     this.wheelEvents = 0;    // exposed for tests
+    this.holding = false;    // mobile wind button held down
+    this.holdT = 0;
+    this.buttonPresses = 0;  // exposed for tests
 
     this._v = new THREE.Vector3();
 
@@ -134,6 +138,25 @@ export class CrankInteraction {
     this.pending = THREE.MathUtils.clamp(this.pending, -0.12, 0.12);
   };
 
+  /** mobile wind button pressed: one note's worth at once; held longer, it keeps winding */
+  pressHold() {
+    this.bus.emit('input:press');
+    this.buttonPresses++;
+    this.holding = true; this.holdT = 0;
+    if (!this.enabled) return;
+    this.lastInput = 'touch';
+    this.queue(TAU * CONFIG.winding.buttonStepTurns);
+    this.markInteraction();
+    this.bus.emit('input:touch');
+  }
+
+  /** button released: a tap keeps its one step; after a hold the crank stops almost at once */
+  releaseHold() {
+    if (!this.holding) return;
+    this.holding = false;
+    if (this.holdT >= CONFIG.winding.buttonHoldDelay) this.pending = THREE.MathUtils.clamp(this.pending, -0.12, 0.12);
+  }
+
   // keyboard: → / D winds (accessibility, kiosks)
   onKey = (e) => {
     this.bus.emit('input:press');
@@ -188,6 +211,16 @@ export class CrankInteraction {
   }
 
   update(dt) {
+    if (this.holding) {
+      const w = CONFIG.winding;
+      this.holdT += dt;
+      const t = this.holdT - w.buttonHoldDelay;
+      if (t > 0 && this.enabled) {
+        const k = Math.min(1, t / w.buttonRampSec), e = k * k * (3 - 2 * k);
+        this.queue(TAU * (w.buttonTurnsPerSec[0] + (w.buttonTurnsPerSec[1] - w.buttonTurnsPerSec[0]) * e) * dt);
+        this.markInteraction();
+      }
+    }
     if (!this.enabled) this.pending = 0;             // disabled: queued input is dropped, nothing turns
     // turn the queued input smoothly (fast input -> fast but continuous rotation)
     if (this.pending) {
@@ -228,6 +261,7 @@ export class CrankInteraction {
   reset() {
     this.angle = 0; this.wound = 0; this.pending = 0; this.debt = 0; this.hold = 0;
     this.touchId = null; this.started = false; this.lastInput = null; this.nudgeT = 0;
+    this.holding = false; this.holdT = 0;
     this.angularSpeed = 0; this._fwdThisFrame = 0; this.enabled = true;
     this.box.setCrankAngle(0);
   }

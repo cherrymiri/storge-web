@@ -45,7 +45,12 @@ const settleGrow = (page) => waitFor(page, () => { const s = window.__storge.sta
 const swipe = async (page, x, y0, y1) => { await page.touchscreen.touchStart(x, y0); for (let j = 1; j <= 8; j++) await page.touchscreen.touchMove(x, y0 + (y1 - y0) * j / 8); await page.touchscreen.touchEnd(); };
 const wind = async (page, touch, n, at) => {
   for (let i = 0; i < n; i++) {
-    if (touch) await swipe(page, ...(at || [200, 640, 320]));
+    if (touch) {
+      // mobile: the wind button when it can be pressed (held ~0.45 s), otherwise the swipe fallback
+      const b = await page.evaluate(() => { const e = document.getElementById('wind-btn'); const r = e.getBoundingClientRect(); if (!r.width) return null; const x = r.left + r.width / 2, y = r.top + r.height / 2; const hit = document.elementFromPoint(x, y); return hit && e.contains(hit) && getComputedStyle(document.getElementById('hud-bottom')).opacity > 0.3 ? [x, y] : null; });
+      if (b) { await page.touchscreen.touchStart(...b); await sleep(450); await page.touchscreen.touchEnd(); globalThis.__btnWinds = (globalThis.__btnWinds || 0) + 1; }
+      else { await swipe(page, ...(at || [200, 640, 320])); globalThis.__swipeWinds = (globalThis.__swipeWinds || 0) + 1; }
+    }
     else { await page.mouse.wheel({ deltaY: 120 }); await sleep(14); }
   }
 };
@@ -186,5 +191,6 @@ console.log('replay text:', rb.t, '| after replay: story', r.story, 'ghost', r.g
 await new Promise((r) => setTimeout(r, 1500)); await wind(page, mobile, 4, at); await new Promise((r) => setTimeout(r, 900));
 const r3 = await S(page);
 console.log('second start: started', r3.started, 'audio', r3.audioState, 'steps', r3.notes, 'fullscreen', await page.evaluate(() => !!document.fullscreenElement));
+console.log('mobile winding: button', globalThis.__btnWinds || 0, 'swipe fallback', globalThis.__swipeWinds || 0, '| wind button after replay:', JSON.stringify(await page.evaluate(() => ({ used: document.getElementById('wind-btn').classList.contains('is-used'), pressed: document.getElementById('wind-btn').classList.contains('is-pressed'), holding: window.__storge.state.holding }))));
 console.log('opening text exact:', JSON.stringify(op.text.split('\n').filter(Boolean)));
 await browser.close();

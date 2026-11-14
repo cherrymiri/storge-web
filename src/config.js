@@ -38,6 +38,11 @@ export const CONFIG = {
     reverseMemoryDeg: 90,  // reverse input remembered beyond the play (must be undone before winding again)
     idleNudgeEverySec: 3.8,
     growthSmoothing: 4.5,  // 1/s, how quickly the visible melody catches up
+    // mobile: the wind button (tap = one note's worth, press and hold = steady winding)
+    buttonStepTurns: 1 / 6,       // one tap turns the crank by one note (6 notes per turn)
+    buttonHoldDelay: 0.28,        // s held before continuous winding starts (shorter = a tap)
+    buttonTurnsPerSec: [0.34, 0.58], // continuous winding: starts calm, eases up to the faster rate
+    buttonRampSec: 1.4,
   },
 
   melody: {

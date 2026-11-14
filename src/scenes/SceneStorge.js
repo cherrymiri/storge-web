@@ -122,6 +122,7 @@ export function createSceneStorge(ctx) {
     fragments.clear();
     melody.reset();
     crank.reset();
+    overlay.setWindPressed(false); overlay.setWindUsed(false);
     drag.reset();
     tl = {}; noteFlare = 0; spotIn = 0; spotPos = 0;
     const un = melody.uniforms; un.uSpotK.value = 0; un.uSpot.value = -1; un.uGlow.value = 1;
@@ -226,6 +227,16 @@ export function createSceneStorge(ctx) {
       drag = new FragmentDrag({ canvas: stage.renderer.domElement, camera: stage.camera, fragments, bus, clock: () => clock });
       ctx.crank = crank;
       ctx.drag = drag;
+      // mobile: the wind button (press = one note, hold = keeps winding; letting go stops it)
+      {
+        const b = overlay.windBtn;
+        const down = (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* synthetic */ } overlay.setWindPressed(true); overlay.setWindUsed(true); crank.pressHold(); };
+        const up = () => { overlay.setWindPressed(false); crank.releaseHold(); };
+        b.addEventListener('pointerdown', down);
+        for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, up);
+        b.addEventListener('contextmenu', (e) => e.preventDefault());
+        b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!e.repeat) { crank.pressHold(); crank.releaseHold(); } } });
+      }
 
       for (const ev of ['crank:first-touch', 'input:press', 'input:release', 'input:touch']) {
         offs.push(bus.on(ev, () => { if (started) audio.unlock(); }));
@@ -286,6 +297,7 @@ export function createSceneStorge(ctx) {
     update(dt, now) {
       clock += dt;
       crank.update(dt, now);
+      overlay.setWindAngle(crank.forwardPos());
       overlay.showSoundTip((CAN_WIND.has(state) || PLAYS()) && crank.lastInput === 'wheel' && !audio.muted && audio.ctx?.state !== 'running');
 
       if (CAN_WIND.has(state)) {
@@ -364,7 +376,7 @@ export function createSceneStorge(ctx) {
         crankAngle: musicBox.crankAngle, forwardSign: crank.forwardSign, crankEnabled: crank.enabled, dragEnabled: drag.enabled,
         notes: audio.stepIndex, notesAudible: audio.notesPlayed, audioState: audio.ctx?.state ?? 'not-started',
         musicStopped: !!audio.musicStopped, shatterPlayed: audio.shatterPlayed || 0,
-        prompt: overlay.currentPrompt, pending: crank.pending, lastInput: crank.lastInput, wheelEvents: crank.wheelEvents, hintMode: overlay.hintMode,
+        prompt: overlay.currentPrompt, pending: crank.pending, holding: crank.holding, buttonPresses: crank.buttonPresses, lastInput: crank.lastInput, wheelEvents: crank.wheelEvents, hintMode: overlay.hintMode,
         pieces: fragments.pieces.length, connected: fragments.pieces.filter((p) => p.connected).length, nextIndex: fragments.nextIndex,
         sprinkles: fragments.sprinkles.length, melodyVisible: melody.group.visible, clock,
         changedBeat: +changed.beat.toFixed(3), changedCount: changed.count, changedPass: changed.pass, changedPlayed: [...changed.played], changedNotes: audio.changedNotes || 0,

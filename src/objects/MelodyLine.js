@@ -23,24 +23,22 @@ export const MelodyPaths = {
     }
     return new THREE.CatmullRomCurve3(pts, false, 'centripetal');
   },
-  // portrait phones: leaves the box to the right, turns upward and rises in a single
-  // soft arc that leans slightly back toward the centre (one bend, small sideways travel)
+  // portrait phones: the box sits low on the left; the line leaves its right face, turns
+  // softly and rises toward the upper right on a calm diagonal with one low swell
   vertical(start, A = CONFIG.melody.curveAmplitude) {
     const s = start;
-    const ctrl = [
-      [0, 0, 0], [0.014, 0.002, 0.001], [0.026, 0.009, 0.002], [0.035, 0.024, 0.002],
-      [0.040, 0.048, 0.003], [0.039, 0.095, 0.003], [0.031, 0.165, 0.002], [0.018, 0.235, 0.000],
-      [0.006, 0.300, -0.002], [-0.001, 0.365, -0.003], [-0.003, 0.405, -0.003],
-    ].map(([x, y, z]) => new THREE.Vector3(s.x + x, s.y + y, s.z + z));
-    // amplitude: scale the sideways bow (distance from the straight rise) after the turn out of the box
-    const a = ctrl[4], b = ctrl[ctrl.length - 1];
-    for (let i = 5; i < ctrl.length - 1; i++) {
-      const q = ctrl[i], t = (q.y - a.y) / (b.y - a.y);
-      const lineX = a.x + (b.x - a.x) * t, lineZ = a.z + (b.z - a.z) * t;
-      q.x = lineX + (q.x - lineX) * A;
-      q.z = lineZ + (q.z - lineZ) * A;
+    const lead = [[0, 0, 0], [0.014, 0.002, 0.001], [0.027, 0.008, 0.002], [0.038, 0.019, 0.002]];
+    const a = new THREE.Vector2(0.046, 0.032), b = new THREE.Vector2(0.200, 0.330);
+    const dir = b.clone().sub(a), len = dir.length(); dir.normalize();
+    const nrm = new THREE.Vector2(-dir.y, dir.x);            // left of the rise (up-left)
+    const pts = lead.map(([x, y, z]) => new THREE.Vector3(s.x + x, s.y + y, s.z + z));
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8;
+      const bow = A * len * (0.055 * Math.sin(Math.PI * t) - 0.02 * Math.sin(Math.PI * 2 * t)) * smooth(0, 0.25, t);
+      const q = a.clone().addScaledVector(dir, len * t).addScaledVector(nrm, bow);
+      pts.push(new THREE.Vector3(s.x + q.x, s.y + q.y, s.z + 0.003 * Math.sin(Math.PI * t)));
     }
-    const base = new THREE.CatmullRomCurve3(ctrl, false, 'centripetal');
+    const base = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
     return new THREE.CatmullRomCurve3(base.getSpacedPoints(240), false, 'centripetal');
   },
 };

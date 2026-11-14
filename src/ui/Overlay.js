@@ -8,6 +8,8 @@ export class Overlay {
     this.audio = audio;
     this.currentPrompt = 'intro';
     this.hint = document.getElementById('hint');
+    this.windBtn = document.getElementById('wind-btn');
+    this.windKnob = this.windBtn.querySelector('.wind-knob');
     this.ending = document.getElementById('ending');
     this.answerKo = this.ending.querySelector('.answer-ko');
     this.replayBtn = document.getElementById('replay');
@@ -64,7 +66,21 @@ export class Overlay {
     if (this.hintMode === mode) return;
     this.hintMode = mode;
     this.hint.dataset.mode = mode;
+    this.bottom.classList.toggle('is-touch', mode === 'touch');
+    this.windBtn.tabIndex = mode === 'touch' ? 0 : -1;
   }
+
+  /** the wind button's small mark turns with the crank */
+  setWindAngle(rad) {
+    const d = Math.round(rad * 57.2958 * 2) / 2;
+    if (d === this._windDeg) return;
+    this._windDeg = d;
+    this.windKnob.style.transform = `rotate(${d}deg)`;
+  }
+  /** the button is pressed now (visual) */
+  setWindPressed(on) { this.windBtn.classList.toggle('is-pressed', on); }
+  /** first press done: the gentle "press me" glow stops */
+  setWindUsed(on) { this.windBtn.classList.toggle('is-used', on); }
 
   /** 05: the hint line says "태엽을 다시 감아보세요." (same icon as in 01) */
   setHintPhase(phase) { this.hint.dataset.phase = phase || ''; }

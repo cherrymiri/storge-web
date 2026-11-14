@@ -184,7 +184,10 @@ html, body {
   pointer-events: none; user-select: none; text-align: center;
   transition: opacity 1.6s ease;
 }
-.hud-bottom.is-quiet { opacity: 0.38; }
+.hud-bottom.is-quiet:not(.is-touch) { opacity: 0.38; }
+/* mobile: the line of text quiets down, the wind button stays clear */
+.hud-bottom.is-touch .hint-text { transition: opacity 1.6s ease; }
+.hud-bottom.is-touch.is-quiet .hint-text { opacity: 0.45; }
 .hud-bottom.is-hidden { opacity: 0; }
 .hint {
   margin: 0; display: inline-flex; align-items: center; gap: 14px;
@@ -192,7 +195,27 @@ html, body {
 }
 .hint-icon { width: 22px; height: 22px; fill: none; stroke: var(--ivory-dim); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
 .hint[data-mode="wheel"] .hint-hand, .hint[data-mode="wheel"] .hint-touch,
-.hint[data-mode="touch"] .hint-mouse, .hint[data-mode="touch"] .hint-wheel { display: none; }
+.hint[data-mode="touch"] .hint-mouse, .hint[data-mode="touch"] .hint-wheel, .hint[data-mode="touch"] .hint-hand { display: none; }
+/* ---------- mobile: wind button (a small round knob; its mark turns with the crank) ---------- */
+.wind-btn { display: none; }
+.hint[data-mode="touch"] .wind-btn {
+  display: grid; place-items: center; flex: none;
+  width: 58px; height: 58px; padding: 0; border-radius: 50%;
+  border: 1px solid rgba(226, 176, 122, 0.42); background: rgba(240, 226, 206, 0.035);
+  color: var(--ivory); cursor: pointer; pointer-events: auto;
+  touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.2s ease;
+}
+.hud-bottom.is-hidden .wind-btn { pointer-events: none; }
+.wind-knob { position: relative; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(240, 226, 206, 0.28); }
+.wind-knob::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(240, 226, 206, 0.55); }
+.wind-knob i { position: absolute; left: 50%; top: 3px; width: 1.5px; height: 11px; margin-left: -0.75px; border-radius: 1px; background: #e2b07a; }
+.wind-btn.is-pressed { border-color: rgba(226, 176, 122, 0.85); background: rgba(226, 176, 122, 0.10); transform: scale(0.96); }
+.wind-btn:focus-visible { outline: 1px solid var(--ivory); outline-offset: 3px; }
+/* before the first press: a slow, quiet breath on the rim, so the eye finds it */
+.wind-btn:not(.is-used) { animation: wind-breathe 2.6s ease-in-out infinite; }
+@keyframes wind-breathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(226, 176, 122, 0); } 50% { box-shadow: 0 0 0 6px rgba(226, 176, 122, 0.07); border-color: rgba(226, 176, 122, 0.7); } }
 /* 05: "태엽을 다시 감아보세요." takes the place of the first winding hint (same icon) */
 .hint-again { display: none; }
 .hint[data-phase="again"] .hint-wheel, .hint[data-phase="again"] .hint-touch { display: none; }
@@ -277,6 +300,7 @@ html, body {
 }
 @media (prefers-reduced-motion: reduce) {
   .prompt-line, .hud-bottom, .loader { transition: none; }
+  .wind-btn { animation: none !important; }
   .nt[data-state="finale"] .halo { animation: none; }
   .note { transform: none; transition: none; }
 }
