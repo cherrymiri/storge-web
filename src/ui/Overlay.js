@@ -125,7 +125,7 @@ export class Overlay {
     this.startNote.hidden = true;
     this.start.classList.add('is-gone');
     this.startBtn.tabIndex = -1;
-    setTimeout(() => { if (this.started) this.start.hidden = true; }, 700);
+    setTimeout(() => { if (this.started) this.start.hidden = true; }, 900);
     this.showPrompt('intro');
     this.bottom.classList.remove('is-hidden');
     this.startCb?.();
