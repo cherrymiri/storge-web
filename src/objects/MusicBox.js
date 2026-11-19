@@ -39,6 +39,12 @@ export class MusicBox {
     if (!this.crankPivot || !this.grip || !this.body) throw new Error('STORGE GLB: expected nodes not found');
     this.crankMeshes = n.crankParts.map((name) => root.getObjectByName(name));
 
+    // 웹의 나무색을 갤러리 첫 화면(블렌더 렌더)의 진한 메이플 색에 맞춤: 나무 텍스처에 따뜻한 갈색을 곱함
+    root.traverse((o) => {
+      const mats = o.isMesh ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      for (const m of mats) if (m && m.name === 'M_Maple_Wood' && !m.userData.toned) { m.color.setRGB(...CONFIG.woodTint); m.userData.toned = true; }
+    });
+
     root.updateMatrixWorld(true);
     this.box = new THREE.Box3().setFromObject(root);               // incl. crank
     this.bodyBox = new THREE.Box3().setFromObject(this.body);

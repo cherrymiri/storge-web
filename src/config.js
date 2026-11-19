@@ -2,6 +2,7 @@
 // to tweak lives here, so the behaviour code stays free of magic numbers.
 
 export const CONFIG = {
+  woodTint: [0.76, 0.56, 0.355],   // 나무 텍스처에 곱하는 색 (1,1,1 = 원래 색). 갤러리 렌더처럼 더 진한 메이플로
   modelUrl: `${import.meta.env.BASE_URL}models/STORGE_MusicBox.glb`,
 
   // names verified in the Blender / GLB tests — do not rename in the GLB
