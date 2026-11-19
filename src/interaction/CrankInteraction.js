@@ -157,6 +157,33 @@ export class CrankInteraction {
     if (this.holdT >= CONFIG.winding.buttonHoldDelay) this.pending = THREE.MathUtils.clamp(this.pending, -0.12, 0.12);
   }
 
+  /** mobile dial: finger down on the dial */
+  dialStart() {
+    this.bus.emit('input:press');
+    this.buttonPresses++;
+    this.dialing = true;
+    if (!this.enabled) return;
+    this.lastInput = 'touch';
+    this.markInteraction();
+    this.bus.emit('input:touch');
+  }
+
+  /** mobile dial turned by rad (screen clockwise +): winds; counter-clockwise pulls back like reverse wheel */
+  dialTurn(rad) {
+    if (!this.dialing || !this.enabled || !rad) return;
+    this.queue(rad * CONFIG.winding.dialRatio);
+    this.markInteraction();
+  }
+
+  /** finger lifted: a tap gives one note; after turning, the crank stops almost at once */
+  dialEnd(tap) {
+    if (!this.dialing) return;
+    this.dialing = false;
+    if (!this.enabled) return;
+    if (tap) { this.queue(TAU * CONFIG.winding.buttonStepTurns); this.markInteraction(); }
+    else this.pending = THREE.MathUtils.clamp(this.pending, -0.12, 0.12);
+  }
+
   // keyboard: → / D winds (accessibility, kiosks)
   onKey = (e) => {
     this.bus.emit('input:press');
@@ -236,7 +263,7 @@ export class CrankInteraction {
     this.angularSpeed += (inst - this.angularSpeed) * (1 - Math.exp(-dt * 6));
 
     // handle pulled back by reverse input -> springs back onto the ratchet once input stops
-    if (this.pending >= 0 && this.touchId === null) {
+    if (this.pending >= 0 && this.touchId === null && !this.dialing) {
       const f = this.forwardPos();
       if (f < this.wound) this.setForwardPos(f + (this.wound - f) * (1 - Math.exp(-dt * 10)));
     }
@@ -261,7 +288,7 @@ export class CrankInteraction {
   reset() {
     this.angle = 0; this.wound = 0; this.pending = 0; this.debt = 0; this.hold = 0;
     this.touchId = null; this.started = false; this.lastInput = null; this.nudgeT = 0;
-    this.holding = false; this.holdT = 0;
+    this.holding = false; this.holdT = 0; this.dialing = false;
     this.angularSpeed = 0; this._fwdThisFrame = 0; this.enabled = true;
     this.box.setCrankAngle(0);
   }

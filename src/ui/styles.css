@@ -198,20 +198,25 @@ html, body {
 .hint[data-mode="touch"] .hint-mouse, .hint[data-mode="touch"] .hint-wheel, .hint[data-mode="touch"] .hint-hand { display: none; }
 /* ---------- mobile: wind button (a small round knob; its mark turns with the crank) ---------- */
 .wind-btn { display: none; }
+.hint[data-mode="touch"] { flex-direction: column; gap: 10px; }
 .hint[data-mode="touch"] .wind-btn {
-  display: grid; place-items: center; flex: none;
-  width: 58px; height: 58px; padding: 0; border-radius: 50%;
+  position: relative; display: grid; place-items: center; flex: none;
+  width: 104px; height: 104px; padding: 0; border-radius: 50%;
   border: 1px solid rgba(226, 176, 122, 0.42); background: rgba(240, 226, 206, 0.035);
-  color: var(--ivory); cursor: pointer; pointer-events: auto;
+  color: var(--ivory); cursor: grab; pointer-events: auto;
   touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.2s ease;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
 }
+/* a faint clockwise arc over the dial: "turn me"; it fades once the dial has been used */
+.wind-arc { position: absolute; inset: -9px; width: calc(100% + 18px); height: calc(100% + 18px); fill: none;
+  stroke: #e2b07a; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.55; transition: opacity 0.6s ease; pointer-events: none; }
+.wind-btn.is-used .wind-arc { opacity: 0; }
 .hud-bottom.is-hidden .wind-btn { pointer-events: none; }
-.wind-knob { position: relative; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(240, 226, 206, 0.28); }
+.wind-knob { position: relative; width: 62px; height: 62px; border-radius: 50%; border: 1px solid rgba(240, 226, 206, 0.28); }
 .wind-knob::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(240, 226, 206, 0.55); }
-.wind-knob i { position: absolute; left: 50%; top: 3px; width: 1.5px; height: 11px; margin-left: -0.75px; border-radius: 1px; background: #e2b07a; }
-.wind-btn.is-pressed { border-color: rgba(226, 176, 122, 0.85); background: rgba(226, 176, 122, 0.10); transform: scale(0.96); }
+.wind-knob i { position: absolute; left: 50%; top: 5px; width: 2px; height: 17px; margin-left: -0.75px; border-radius: 1px; background: #e2b07a; }
+.wind-btn.is-pressed { border-color: rgba(226, 176, 122, 0.85); background: rgba(226, 176, 122, 0.10); cursor: grabbing; }
 .wind-btn:focus-visible { outline: 1px solid var(--ivory); outline-offset: 3px; }
 /* before the first press: a slow, quiet breath on the rim, so the eye finds it */
 .wind-btn:not(.is-used) { animation: wind-breathe 2.6s ease-in-out infinite; }

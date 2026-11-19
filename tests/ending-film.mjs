@@ -48,7 +48,11 @@ const wind = async (page, touch, n, at) => {
     if (touch) {
       // mobile: the wind button when it can be pressed (held ~0.45 s), otherwise the swipe fallback
       const b = await page.evaluate(() => { const e = document.getElementById('wind-btn'); const r = e.getBoundingClientRect(); if (!r.width) return null; const x = r.left + r.width / 2, y = r.top + r.height / 2; const hit = document.elementFromPoint(x, y); return hit && e.contains(hit) && getComputedStyle(document.getElementById('hud-bottom')).opacity > 0.3 ? [x, y] : null; });
-      if (b) { await page.touchscreen.touchStart(...b); await sleep(450); await page.touchscreen.touchEnd(); globalThis.__btnWinds = (globalThis.__btnWinds || 0) + 1; }
+      if (b) {   // one clockwise circle on the dial
+        const R = await page.evaluate(() => document.getElementById('wind-btn').getBoundingClientRect().width / 2 * 0.62);
+        let ang = -Math.PI / 2; await page.touchscreen.touchStart(b[0] + R * Math.cos(ang), b[1] + R * Math.sin(ang));
+        for (let i = 0; i < 24; i++) { ang += Math.PI * 2 / 24; await page.touchscreen.touchMove(b[0] + R * Math.cos(ang), b[1] + R * Math.sin(ang)); }
+        await page.touchscreen.touchEnd(); globalThis.__btnWinds = (globalThis.__btnWinds || 0) + 1; }
       else { await swipe(page, ...(at || [200, 640, 320])); globalThis.__swipeWinds = (globalThis.__swipeWinds || 0) + 1; }
     }
     else { await page.mouse.wheel({ deltaY: 120 }); await sleep(14); }

@@ -227,15 +227,37 @@ export function createSceneStorge(ctx) {
       drag = new FragmentDrag({ canvas: stage.renderer.domElement, camera: stage.camera, fragments, bus, clock: () => clock });
       ctx.crank = crank;
       ctx.drag = drag;
-      // mobile: the wind button (press = one note, hold = keeps winding; letting go stops it)
+      // mobile: the dial — turn it like the crank (clockwise winds, the other way pulls back); a tap = one note
       {
         const b = overlay.windBtn;
-        const down = (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* synthetic */ } overlay.setWindPressed(true); overlay.setWindUsed(true); crank.pressHold(); };
-        const up = () => { overlay.setWindPressed(false); crank.releaseHold(); };
-        b.addEventListener('pointerdown', down);
+        let id = null, last = 0, moved = 0, t0 = 0;
+        const angAt = (e) => { const r = b.getBoundingClientRect(); const x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2); return { a: Math.atan2(y, x), d: Math.hypot(x, y), R: r.width / 2 }; };
+        b.addEventListener('pointerdown', (e) => {
+          e.preventDefault(); if (id !== null) return;
+          id = e.pointerId; try { b.setPointerCapture(id); } catch { /* synthetic */ }
+          last = angAt(e).a; moved = 0; t0 = performance.now();
+          overlay.setWindPressed(true); overlay.setWindUsed(true); crank.dialStart();
+        });
+        b.addEventListener('pointermove', (e) => {
+          if (e.pointerId !== id) return;
+          e.preventDefault();
+          const p = angAt(e);
+          let d = p.a - last; last = p.a;
+          if (d > Math.PI) d -= 2 * Math.PI; else if (d < -Math.PI) d += 2 * Math.PI;
+          if (p.d < p.R * 0.18) return;                 // too close to the centre: the angle jumps, ignore
+          d = Math.max(-0.6, Math.min(0.6, d));
+          moved += Math.abs(d);
+          crank.dialTurn(d);
+        });
+        const up = (e) => {
+          if (e.pointerId !== id) return;
+          id = null; overlay.setWindPressed(false);
+          const w = CONFIG.winding;
+          crank.dialEnd(e.type === 'pointerup' && moved < w.dialTapRad && performance.now() - t0 < w.dialTapMs);
+        };
         for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, up);
         b.addEventListener('contextmenu', (e) => e.preventDefault());
-        b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!e.repeat) { crank.pressHold(); crank.releaseHold(); } } });
+        b.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); crank.dialStart(); crank.dialEnd(true); } });
       }
 
       for (const ev of ['crank:first-touch', 'input:press', 'input:release', 'input:touch']) {
@@ -376,7 +398,7 @@ export function createSceneStorge(ctx) {
         crankAngle: musicBox.crankAngle, forwardSign: crank.forwardSign, crankEnabled: crank.enabled, dragEnabled: drag.enabled,
         notes: audio.stepIndex, notesAudible: audio.notesPlayed, audioState: audio.ctx?.state ?? 'not-started',
         musicStopped: !!audio.musicStopped, shatterPlayed: audio.shatterPlayed || 0,
-        prompt: overlay.currentPrompt, pending: crank.pending, holding: crank.holding, buttonPresses: crank.buttonPresses, lastInput: crank.lastInput, wheelEvents: crank.wheelEvents, hintMode: overlay.hintMode,
+        prompt: overlay.currentPrompt, pending: crank.pending, holding: crank.dialing, buttonPresses: crank.buttonPresses, lastInput: crank.lastInput, wheelEvents: crank.wheelEvents, hintMode: overlay.hintMode,
         pieces: fragments.pieces.length, connected: fragments.pieces.filter((p) => p.connected).length, nextIndex: fragments.nextIndex,
         sprinkles: fragments.sprinkles.length, melodyVisible: melody.group.visible, clock,
         changedBeat: +changed.beat.toFixed(3), changedCount: changed.count, changedPass: changed.pass, changedPlayed: [...changed.played], changedNotes: audio.changedNotes || 0,

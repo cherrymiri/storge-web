@@ -43,6 +43,10 @@ export const CONFIG = {
     buttonHoldDelay: 0.28,        // s held before continuous winding starts (shorter = a tap)
     buttonTurnsPerSec: [0.34, 0.58], // continuous winding: starts calm, eases up to the faster rate
     buttonRampSec: 1.4,
+    // mobile dial: one finger circle turns the crank this many times (clockwise winds, the other way pulls back)
+    dialRatio: 1.15,
+    dialTapRad: 0.12,             // less finger rotation than this (and a short touch) counts as a tap = one note
+    dialTapMs: 320,
   },
 
   melody: {
