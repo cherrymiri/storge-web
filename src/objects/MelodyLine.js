@@ -23,23 +23,20 @@ export const MelodyPaths = {
     }
     return new THREE.CatmullRomCurve3(pts, false, 'centripetal');
   },
-  // portrait phones: the box sits low on the left; the line leaves its right face, turns
-  // softly and rises toward the upper right on a calm diagonal with one low swell
+  // portrait phones: the same flowing line as on PC (straight out of the box, then soft waves),
+  // a little shorter and drifting gently upward, so the scene is framed by the screen's width
   vertical(start, A = CONFIG.melody.curveAmplitude) {
-    const s = start;
-    const lead = [[0, 0, 0], [0.014, 0.002, 0.001], [0.027, 0.008, 0.002], [0.038, 0.019, 0.002]];
-    const a = new THREE.Vector2(0.046, 0.032), b = new THREE.Vector2(0.200, 0.330);
-    const dir = b.clone().sub(a), len = dir.length(); dir.normalize();
-    const nrm = new THREE.Vector2(-dir.y, dir.x);            // left of the rise (up-left)
-    const pts = lead.map(([x, y, z]) => new THREE.Vector3(s.x + x, s.y + y, s.z + z));
-    for (let i = 0; i <= 8; i++) {
-      const t = i / 8;
-      const bow = A * len * (0.055 * Math.sin(Math.PI * t) - 0.02 * Math.sin(Math.PI * 2 * t)) * smooth(0, 0.25, t);
-      const q = a.clone().addScaledVector(dir, len * t).addScaledVector(nrm, bow);
-      pts.push(new THREE.Vector3(s.x + q.x, s.y + q.y, s.z + 0.003 * Math.sin(Math.PI * t)));
+    const L = 0.27, pts = [];
+    for (let i = 0; i <= 240; i++) {
+      const t = i / 240;
+      const ramp = smooth(0, 0.35, t);
+      pts.push(new THREE.Vector3(
+        start.x + L * t,
+        start.y + 0.05 * smooth(0.1, 1, t) + 0.0105 * A * ramp * Math.sin(Math.PI * 2 * 1.1 * t - 0.35),
+        start.z + 0.005 * A * ramp * Math.sin(Math.PI * 2 * 0.6 * t),
+      ));
     }
-    const base = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
-    return new THREE.CatmullRomCurve3(base.getSpacedPoints(240), false, 'centripetal');
+    return new THREE.CatmullRomCurve3(pts, false, 'centripetal');
   },
 };
 

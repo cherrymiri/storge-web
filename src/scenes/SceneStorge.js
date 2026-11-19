@@ -346,7 +346,7 @@ export function createSceneStorge(ctx) {
           strain.hz = st.tremorHzMax * (1 + 0.6 * e);
         }
         phase += dt * strain.hz * TAU;
-        const dir = layoutMode === 'vertical' ? new THREE.Vector3(0.94, 0, 0.34) : new THREE.Vector3(0, 0.94, 0.34);
+        const dir = new THREE.Vector3(0, 0.94, 0.34);     // both layouts now run sideways: the line trembles up and down
         melody.setStrain({ ...strain, phase, dir });
         melody.update(dt);
         melody.syncMirror();
