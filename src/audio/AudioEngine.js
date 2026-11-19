@@ -1,4 +1,5 @@
 import { noteToFreq } from './melodyTools.js';
+import { speakerOut } from './iosAudio.js';
 
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 // 0.1 s of silence (8 kHz mono WAV) — keeps iOS in "playback" mode so the silent switch does not mute the music box
@@ -87,7 +88,7 @@ export class AudioEngine {
     this.bus = c.createGain();
     this.bus.connect(this.dry); this.bus.connect(verb); verb.connect(this.wet);
     this.dry.connect(tone); this.wet.connect(tone);
-    tone.connect(comp); comp.connect(this.master); this.master.connect(c.destination);
+    tone.connect(comp); comp.connect(this.master); this.master.connect(speakerOut(c));
     // music notes go through their own gain, so they can be cut at the break
     this.musicBus = c.createGain(); this.musicBus.connect(this.bus);
     // effects (the break) bypass the reverb: short and clear
