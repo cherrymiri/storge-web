@@ -1,5 +1,7 @@
 import { noteToFreq } from './melodyTools.js';
 import { speakerOut } from './iosAudio.js';
+// the music box while cranking at about -33 LUFS, like the other works' main sound (slider 70% = this level)
+const LOUDNESS = 0.56;
 
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 // 0.1 s of silence (8 kHz mono WAV) — keeps iOS in "playback" mode so the silent switch does not mute the music box
@@ -74,7 +76,7 @@ export class AudioEngine {
   buildGraph() {
     const c = this.ctx;
     this.master = c.createGain();
-    this.master.gain.value = this.muted ? 0 : this.volume;
+    this.master.gain.value = this.muted ? 0 : this.volume * LOUDNESS;
     const comp = c.createDynamicsCompressor();
     comp.threshold.value = -16; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.25;
     const tone = c.createBiquadFilter();
@@ -233,11 +235,11 @@ export class AudioEngine {
 
   setVolume(v) {
     this.volume = v;
-    if (this.master) this.master.gain.setTargetAtTime(this.muted ? 0 : v, this.ctx.currentTime, 0.05);
+    if (this.master) this.master.gain.setTargetAtTime(this.muted ? 0 : v * LOUDNESS, this.ctx.currentTime, 0.05);
   }
 
   setMuted(m) {
     this.muted = m;
-    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.05);
+    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.volume * LOUDNESS, this.ctx.currentTime, 0.05);
   }
 }
