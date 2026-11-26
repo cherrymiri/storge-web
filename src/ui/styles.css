@@ -78,11 +78,13 @@ html, body {
   opacity: 0; visibility: hidden; transition: opacity 0.8s ease, visibility 0s linear 0.8s;
 }
 .ending.show-ko { opacity: 1; visibility: visible; transition: opacity 0.8s ease; }
+.ending { will-change: opacity; }
 /* the scene behind: a little blur and dim, strongest behind the card, fading out towards the edges */
 .ending::before {
   content: ""; position: absolute; inset: 0;
-  background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(10, 6, 3, 0.3), rgba(10, 6, 3, 0.14) 75%, rgba(10, 6, 3, 0.04));
-  -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px);
+  /* 렉 방지: 뒤 화면을 흐리게(backdrop blur) 하면 큰 화면에서 매 프레임 3D 화면 전체를 다시 흐려야 해서 엔딩 순간 렉이 걸림.
+     흐림 대신 살짝 더 어둡게만 해서 카드가 또렷하게 보이게 함 */
+  background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(10, 6, 3, 0.42), rgba(10, 6, 3, 0.2) 75%, rgba(10, 6, 3, 0.05));
   -webkit-mask-image: radial-gradient(ellipse 52% 40% at 50% 50%, #000 52%, transparent 100%);
   mask-image: radial-gradient(ellipse 52% 40% at 50% 50%, #000 52%, transparent 100%);
 }
